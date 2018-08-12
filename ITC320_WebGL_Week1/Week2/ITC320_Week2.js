@@ -4,7 +4,7 @@ var points;
 var colours;
 var worldMatrix;
 var worldMatrixLocation;
-
+var timeLocation;
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -156,32 +156,31 @@ window.onload = function init()
 	worldMatrixLocation = gl.getUniformLocation(program, "umWorldMatrix");
 	viewMatrixLocation = gl.getUniformLocation(program, "umViewMatrix");
 	projMatrixLocation = gl.getUniformLocation(program, "umProjMatrix");
-	
-	viewMatrix = lookAt([0, 1, -10], [0, 0, 10], [0, 1, 0]);
+	timeLocation = gl.getUniformLocation(program, "uTime");
+	viewMatrix = lookAt([0, 0, -10], [0, 0, 10], [0, 1, 0]);
 	projMatrix = perspective(45, 512.0/512.0, 2.0, 10000.0);
 	gl.uniformMatrix4fv(viewMatrixLocation, gl.FALSE, flatten(viewMatrix));
 	gl.uniformMatrix4fv(projMatrixLocation, gl.FALSE, flatten(projMatrix));
 	
 	
-	rotateScaleMatrix = mult(rotate(90, [0, 1, 1]), scalem(0.1, 0.1, 0.1));
+	rotateScaleMatrix = mult(rotate(90, [0, 1, 1]), scalem(0.1, 0.1, 2.0));
 	
 	gl.enable(gl.DEPTH_TEST);
 	
-    render();
+    this.requestAnimationFrame(render);
 	
 };
 
 
-function render()
+function render(time)
 {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 	
 	
-	
+    gl.uniform1f(timeLocation, time*0.005);
+	var z = 0;
 	for (var x =-5;x<5;x++)   
     for (var y =-5;y<5;y++)   
-    for (var z =-5;z<5;z++)
-
     {
 
      //Change the transformation
@@ -193,5 +192,6 @@ function render()
     }
 	
 	
+    this.requestAnimationFrame(render);
     
 }

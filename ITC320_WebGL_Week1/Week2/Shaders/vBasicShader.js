@@ -1,15 +1,20 @@
 var vBasicShaderCode  =`
 attribute vec3 aPosition; 
 //attribute vec3 aColour;
-varying vec3 vColour;
+
+uniform float uTime;
 uniform mat4 umWorldMatrix;
 uniform mat4 umViewMatrix;
 uniform mat4 umProjMatrix;
+
+varying vec3 vWorldPos;
+varying float vTime;
 void main() 
 {
-	vec4 transformedPos = umProjMatrix*umViewMatrix*umWorldMatrix*vec4(aPosition,1.0);
+	vec4 worldPos = umWorldMatrix*vec4(aPosition,1.0);
+	vec4 transformedPos = umProjMatrix*umViewMatrix*worldPos;
 	gl_Position = transformedPos;
-	float dist = transformedPos.z;
-	vColour= mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0, 1.0), dist/10.0);
+	vWorldPos = worldPos.xyz;
+	vTime = uTime;
      
 }`;
