@@ -1,6 +1,5 @@
 #!/usr/bin/python
-import sys
-import os
+import sys, os
 PORT = 8080
 
 import http.server
