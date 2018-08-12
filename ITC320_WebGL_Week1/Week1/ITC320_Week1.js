@@ -2,11 +2,19 @@
 var gl;
 var points;
 var colours;
+var fRotation;
+var uRotation;
 
+var vPivot;
+var uPivot;
+
+var vPosition;
+var uPosition;
+var lastFrameTime = 0;
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
-    
+    fRotation = 0;
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
@@ -21,6 +29,8 @@ window.onload = function init()
         vec2(  0, 1 )
     ];
 
+
+    vPivot = vec3( -1/3.0, 1/3.0 );
 	//Next, initialize the colours for each corner in Red,Green,Blue
     colours = [
         vec3( 1, 0,0 ),
@@ -35,10 +45,13 @@ window.onload = function init()
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
     
     //  Load shaders and initialize attribute buffers
-    var program = initShaders( gl, vBasicShaderCode,
+    var program = initShaders( gl, vSpinningShaderCode,
                                fBasicShaderCode );
     gl.useProgram( program );
     
+    uRotation = gl.getUniformLocation(program, "uRotation");
+    uPivot = gl.getUniformLocation(program, "uPivot");
+    uPosition = gl.getUniformLocation(program, "uPosition");
     // Load the positional data into the GPU
     var posBufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, posBufferId );
@@ -58,13 +71,27 @@ window.onload = function init()
     var vCol = gl.getAttribLocation( program, "aColour" );
     gl.vertexAttribPointer( vCol, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vCol );
-	
-    render();
+	this.requestAnimationFrame(render);
+    //render();
 };
 
 
-function render()
+function render(time)
 {
+    var deltaTime = time - lastFrameTime;
+    lastFrameTime = time;
+
     gl.clear( gl.COLOR_BUFFER_BIT );
-    gl.drawArrays( gl.TRIANGLES, 0, 3 ); //Draw a single triangle (3 points)
+    fRotation += deltaTime*0.01;
+    gl.uniform1f(uRotation, fRotation ); 
+    
+    gl.uniform2f(uPivot, vPivot[0], vPivot[1] ); 
+    
+    gl.uniform2f(uPosition, 0,0 ); 
+    gl.drawArrays( gl.TRIANGLES, 0, 3 );
+
+    gl.uniform2f(uPosition, 0.75,0 ); 
+    gl.drawArrays( gl.TRIANGLES, 0, 3 );
+    
+	this.requestAnimationFrame(render);
 }
