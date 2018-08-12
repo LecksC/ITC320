@@ -9,7 +9,7 @@ void main()
 {
 	vec4 transformedPos = umProjMatrix*umViewMatrix*umWorldMatrix*vec4(aPosition,1.0);
 	gl_Position = transformedPos;
-	float dist = transformedPos.z*transformedPos.z + transformedPos.y*transformedPos.y + transformedPos.x*transformedPos.x;
-	vColour= vec3(1.0-dist/400.0, 0, 0);
+	float dist = transformedPos.z;
+	vColour= mix(vec3(1.0, 0.0, 0.0), vec3(0.0, 0, 1.0), dist/10.0);
      
 }`;
