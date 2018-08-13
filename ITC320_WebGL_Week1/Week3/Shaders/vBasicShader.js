@@ -1,11 +1,10 @@
 var vBasicShaderCode  =`
 attribute vec3 aPosition; 
-//attribute vec3 aColour;
+attribute vec3 aUV;
 
 uniform float uTime;
-uniform mat4 umWorldMatrix;
-uniform mat4 umViewMatrix;
-uniform mat4 umProjMatrix;
+uniform mat4 uWorldMatrix;
+uniform mat4 uViewProjectionMatrix;
 
 varying vec3 vWorldPos;
 varying float vTime;

@@ -158,7 +158,7 @@ window.onload = function init()
 	projMatrixLocation = gl.getUniformLocation(program, "umProjMatrix");
 	timeLocation = gl.getUniformLocation(program, "uTime");
 	viewMatrix = lookAt([0, 0, -10], [0, 0, 10], [0, 1, 0]);
-	projMatrix = perspective(45, 512.0/512.0, 2.0, 10000.0);
+	projMatrix = perspective(45, 512.0/512.0, 0.1, 10000.0);
 	gl.uniformMatrix4fv(viewMatrixLocation, gl.FALSE, flatten(viewMatrix));
 	gl.uniformMatrix4fv(projMatrixLocation, gl.FALSE, flatten(projMatrix));
 	
