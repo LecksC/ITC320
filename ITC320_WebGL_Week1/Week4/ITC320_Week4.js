@@ -18,7 +18,7 @@ window.onload = function init()
     //  Initialize our data for the Triangle
     //
 
-    var textureUrl = "textures/H1.png";
+    var textureUrl = "textures/Farmhouse TextureColourMask.png";
     var texture = loadTexture(textureUrl);
     mesh = new Mesh();
     mesh.addInstance(translate([0,0,0]));
@@ -36,7 +36,9 @@ window.onload = function init()
     //
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-    
+    gl.enable(gl.BLEND);
+
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     ////  Load shaders and initialize attribute buffers
     //var program = initShaders( gl, vBasicShaderCode,
     //                           fBasicShaderCode );
