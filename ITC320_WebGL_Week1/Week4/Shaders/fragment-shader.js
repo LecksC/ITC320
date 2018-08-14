@@ -9,11 +9,10 @@ script.id="fragment-shader";
 script.type = "x-shader/x-vertex";
 var fragmentShaderGLSL = 
 shaderHeader +`
-varying highp vec3 vVertexColor;
 varying highp vec2 vTexCoords;
-uniform sampler2D uSampler;
+uniform sampler2D uTextureSampler;
 void main() {
-	gl_FragColor = (vec4(vVertexColor,1.0));
+	gl_FragColor = texture2D(uTextureSampler, vTexCoords);// (vec4(vTexCoords.xy, 0.0, 1.0));
 }
 `;
 script.innerHTML = fragmentShaderGLSL;

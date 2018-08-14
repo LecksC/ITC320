@@ -138,15 +138,17 @@ class Mesh {
                // Set the current shader and its uniform values.
             gl.useProgram(part.shader.program);
 
+            if(part.mainTexture !== null)
+            {
+                // Tell WebGL we want to affect texture unit 0
+                gl.activeTexture(gl.TEXTURE0);
 
-              // Tell WebGL we want to affect texture unit 0
-            gl.activeTexture(gl.TEXTURE0);
+                // Bind the texture to texture unit 0
+                gl.bindTexture(gl.TEXTURE_2D, part.mainTexture);
 
-            // Bind the texture to texture unit 0
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-
-            // Tell the shader we bound the texture to texture unit 0
-            gl.uniform1i(program.uTextureSampler, 0);
+                // Tell the shader we bound the texture to texture unit 0
+                gl.uniform1i(part.shader.uTextureSampler, 0);
+            }
             gl.uniformMatrix4fv(part.shader.uViewProjectionMatrix, false, flatten(camera.viewProjection));
 
             // Point the shader to the vertex/normal/color buffers (if the shader uses them).
@@ -161,12 +163,12 @@ class Mesh {
             }
             if (part.shader.aColor > -1) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-                gl.vertexAttribPointer(part.shader.aColor, 3, gl.FLOAT, true, 0, 0);
+                gl.vertexAttribPointer(part.shader.aColor, 3, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(part.shader.aColor);
             }
             if (part.shader.aUV > -1) {
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
-                gl.vertexAttribPointer(part.shader.aUV, 2, gl.FLOAT, true, 0, 0);
+                gl.vertexAttribPointer(part.shader.aUV, 2, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(part.shader.aUV);
             }
 
@@ -300,9 +302,9 @@ class Mesh {
             }
         }
     }
-
+// then is function to run that is passed the mesh after it's downloaded
     // based on https://stackoverflow.com/questions/8567114/how-to-make-an-ajax-call-without-jquery
-    DownloadObj(filename)
+    DownloadObj(filename, then)
     {
         var xmlhttp = new XMLHttpRequest();
         var self = this;
@@ -310,6 +312,10 @@ class Mesh {
             if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                if (xmlhttp.status === 200) {
                    self.LoadObj(xmlhttp.responseText);
+                   if(then !== undefined)
+                   {
+                       then(self);
+                   }
                }
                else if (xmlhttp.status === 400) {
                   alert('There was an error 400');
@@ -348,7 +354,7 @@ class Mesh {
                 {
                     
                     var firstword = line.substring(0, firstwordlength);
-                    var restOfLine = line.substring(firstwordlength, line.length - firstwordlength).trim();
+                    var restOfLine = line.substring(firstwordlength+1, line.length - firstwordlength+1).trim();
                     switch(firstword.toLowerCase())
                     {
                         case "o":
@@ -406,6 +412,7 @@ class Mesh {
                                 rawpositionindexs[currentMaterial].push(this.GetIndexs(restOfLine, 0, 0));
                                 rawpositionindexs[currentMaterial].push(this.GetIndexs(restOfLine, 2, 0));
 
+                                
                                 rawuvindexs[currentMaterial].push(this.GetIndexs(restOfLine, 1, 1));
                                 rawuvindexs[currentMaterial].push(this.GetIndexs(restOfLine, 0, 1));
                                 rawuvindexs[currentMaterial].push(this.GetIndexs(restOfLine, 2, 1));
@@ -439,8 +446,10 @@ class Mesh {
 
                 var uvIndex = rawuvindexs[partname][t];
                 if(uvIndex >= 0) {
-                    this.uvs.push(rawuvs[uvIndex]);
+                    //flip the Y coordinate
+                    this.uvs.push([rawuvs[uvIndex][0], -rawuvs[uvIndex][1]] );
                 } else {
+                    console.log("invalid uvs for vertex " + t);
                     this.uvs.push([0,0]);
                 }
 
@@ -470,10 +479,20 @@ class Mesh {
 
         var split = vert.split('/');
 
+        var val = -1;
         if(split.length > indexType)
-            return parseInt(split[indexType]) - 1;
+        {
+            var numberstr = split[indexType];
+       
+            val = parseInt(numberstr) - 1;
+        }
+        if(!isFinite(val))
+        {
+            console.log("Invalid value: " + split + "\nin:" + str);
 
-        return -1;
+        }
+
+        return val;
   
     }
     StringToVector(str)

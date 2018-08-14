@@ -18,9 +18,16 @@ window.onload = function init()
     //  Initialize our data for the Triangle
     //
 
+    var textureUrl = "textures/H1.png";
+    var texture = loadTexture(textureUrl);
     mesh = new Mesh();
     mesh.addInstance(translate([0,0,0]));
-    mesh.DownloadObj("meshes/H1.obj");
+    mesh.DownloadObj("meshes/H1.obj", function(m) {     
+        for(var i = 0; i < m.meshParts.length; i++)
+        {
+            m.meshParts[i].mainTexture = texture; 
+        }});
+
     // First, initialize the corners of our triangle with three points.
     camera = new firstPersonCamera();
 	
