@@ -6,6 +6,7 @@
  */
 class firstPersonCamera {
     constructor() {
+        this.name = "Orbit Camera";
         // The height above the ground.
         this.personHeight = 1.8;
         // The initial position and rotation.

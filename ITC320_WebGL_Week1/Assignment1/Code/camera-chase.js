@@ -4,12 +4,16 @@
  * 
  * @author  Lecks Chester
  */
-class firstPersonCamera {
+class chaseCamera {
     constructor() {
+        this.name = "Chase Camera";
         // The height above the ground.
-        this.personHeight = 1.8;
+        this.distance = 5.0;
+        this.height = 2.5;
         // The initial position and rotation.
-        this.position = vec3(0, this.personHeight, -10);
+        this.eye = vec3(0, 0, 0);
+        this.at = vec3(1, 0, 0);
+        this.target = null;
         this.rotationX = 0;
         this.rotationY = 0;
         // The limits for looking up/down.
@@ -32,14 +36,9 @@ class firstPersonCamera {
      * 
      */
     updateMatrices() {
-        //  this.projection = ortho(-45, 45, -this.personHeight, -this.personHeight + 90/this.aspect, this.near, this.far);// 
         this.projection = perspective(this.fieldOfViewY, this.aspect, this.near, this.far);
-        var eye = this.position;
-        var up = vec3(0, 1, 0);
-        // Create the target based on the view directions.
-        var at = add(eye, this.forwardVector);
-
-        this.view = lookAt(eye, at, up);
+        const up = vec3(0, 1, 0);
+        this.view = lookAt(this.eye, this.at, up);
         this.viewProjection = mult(this.projection, this.view);
     }
 
@@ -52,6 +51,13 @@ class firstPersonCamera {
      * @param   {float} deltaTime   the time since the last update in seconds.
      */
     update(deltaTime) {
+        if(this.target === null)
+            return;
+        this.at = this.target.position; 
+        let behind = subtract(this.target.position, scale(this.distance, this.target.forwards));
+        behind[1] = this.height;
+        this.eye = mix(this.eye, behind, deltaTime* 15);
+
         // Find the destination height.
       // var destHeight = 0;
       // for (var i = 0; i < heightShapes.length; i++) {
@@ -74,10 +80,10 @@ class firstPersonCamera {
      * @param   {float} right   the distance to move right (negative for left).
      */
     move(forward, right) {
-        var fwdvec = rotateAroundAxis(vec3(0, 0, 1), vec3(0, 1, 0), this.rotationX);
-        var rightvec = rotateAroundAxis(vec3(-1, 0, 0), vec3(0, 1, 0), this.rotationX);
-        this.position = add(this.position, scale(forward, fwdvec));
-        this.position = add(this.position, scale(right, rightvec));
+      // var fwdvec = rotateAroundAxis(vec3(0, 0, 1), vec3(0, 1, 0), this.rotationX);
+      // var rightvec = rotateAroundAxis(vec3(-1, 0, 0), vec3(0, 1, 0), this.rotationX);
+      // this.position = add(this.position, scale(forward, fwdvec));
+      // this.position = add(this.position, scale(right, rightvec));
     }
 
     /**

@@ -18,14 +18,26 @@ window.onload = function init()
     //  Initialize our data for the Triangle
     //
 
-    var textureUrl = "textures/Farmhouse TextureColourMask.png";
-    var texture = loadTexture(textureUrl);
+    var bodyTexture = loadTexture("textures/Body.png");
+    var headTexture = loadTexture("textures/Head.png");
     mesh = new Mesh();
     mesh.addInstance(translate([0,0,0]));
-    mesh.DownloadObj("meshes/H1.obj", function(m) {     
+    mesh.DownloadObj("meshes/Male.obj", function(m) {     
         for(var i = 0; i < m.meshParts.length; i++)
         {
-            m.meshParts[i].mainTexture = texture; 
+  
+            if(m.meshParts[i].name === "body")
+            {
+                m.meshParts[i].mainTexture = bodyTexture; 
+                m.meshParts[i].shader = new Shader(vertexShaderGLSL, fragmentShaderGLSL_Male);
+                gl.useProgram( m.meshParts[i].shader.program );
+                gl.uniform3f(m.meshParts[i].shader.uTintColor, 0.5, 0.25, 0.25);
+
+            }
+            if(m.meshParts[i].name === "detil")
+            {
+            m.meshParts[i].mainTexture = headTexture; 
+            }
         }});
 
     // First, initialize the corners of our triangle with three points.

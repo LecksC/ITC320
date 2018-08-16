@@ -109,6 +109,8 @@ class Mesh {
         }
 
         this.meshParts = [];
+
+        this.bounds = new BoundingBox();
     }
 
 
@@ -148,9 +150,10 @@ class Mesh {
 
                 // Tell the shader we bound the texture to texture unit 0
                 gl.uniform1i(part.shader.uTextureSampler, 0);
-            }
+            } else { continue; }
             gl.uniformMatrix4fv(part.shader.uViewProjectionMatrix, false, flatten(camera.viewProjection));
 
+            gl.uniform1f(part.shader.uTime, timing.currentTime);
             // Point the shader to the vertex/normal/color buffers (if the shader uses them).
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.vertexAttribPointer(part.shader.aPosition, 3, gl.FLOAT, false, 0, 0);
@@ -204,7 +207,7 @@ class Mesh {
                      //  gl.vertexAttrib(part.shader.aInstanceWorldMatrix, flatten());
                     }
                       gl.uniformMatrix4fv(part.shader.uModelViewMatrix, false, flatten(translate(0, 0, 0)));
-                    gl.drawElements(gl.TRIANGLES, part.count, gl.UNSIGNED_SHORT, part.offset);
+                    gl.drawElements(gl.TRIANGLES, part.count, gl.UNSIGNED_SHORT, part.offset*2);
                    // timing.polyCount += part.count / 3;
                 }
             }
@@ -302,6 +305,262 @@ class Mesh {
             }
         }
     }
+
+    calculateBounds()
+    {
+        this.bounds = new BoundingBox();
+        for(let p = 0; p < this.meshParts.length; p++)
+        {
+            for(let i = this.meshParts[p].offset; i < this.meshParts[p].offset + this.meshParts[p].count; i++)
+            {
+                this.bounds.addPoint(this.points[i]);
+            }
+        }
+    }
+
+    createMeshFromParts(oldmesh, partList)
+    {
+        this.points = oldmesh.points;
+        this.uvs = oldmesh.uvs;
+        this.normals = oldmesh.normals;
+        this.colors = oldmesh.colors;
+        this.indexs = oldmesh.indexs;
+        this.vertexBuffer = oldmesh.vertexBuffer;
+        this.indexBuffer = oldmesh.indexBuffer;
+        this.colorBuffer = oldmesh.colorBuffer;
+        this.normalBuffer = oldmesh.normalBuffer;
+        this.texCoordBuffer = oldmesh.texCoordBuffer;
+        var parts = [];
+        for(let i = 0; i < partList.length; i++)
+        {
+            parts.push(oldmesh.meshParts[partList[i]]);
+        }
+        this.meshParts = parts;
+        this.buffersUpdated = true;
+        this.calculateBounds();
+    }
+
+
+    DownloadMtl(fileName, then)
+    {
+        var xmlhttp = new XMLHttpRequest();
+        var self = this;
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+               if (xmlhttp.status === 200) {
+                   self.LoadObj2(xmlhttp.responseText);
+                   if(then !== undefined)
+                   {
+                       then(self);
+                   }
+               }
+               else if (xmlhttp.status === 400) {
+                  alert('There was an error 400');
+               }
+               else {
+                   alert('something else other than 200 was returned');
+               }
+            }
+        };
+    
+        xmlhttp.open("GET", "Assets/meshes/" + fileName + ".obj", true);
+        xmlhttp.send();
+
+    LoadMtl(mtlCode)
+    {
+        mtlCode = loadFileAJAX(fileName);
+        if (!mtlCode) {
+           alert("Could not material source: "+fileName);
+        }
+        
+        var objCodeLineSplit = mtlCode.split("\n")
+    
+        this.materialNames = [];
+    
+        // establish the correspondence between material name and texture (TGA) file name 
+        for (var lineId =0; lineId<objCodeLineSplit.length;lineId++)
+        {
+            if (objCodeLineSplit[lineId][0]=='n' && objCodeLineSplit[lineId][1]=='e')
+            {
+                posString= objCodeLineSplit[lineId].split(" ");
+                this.materialNames.push([posString[1],null]);
+            }
+            if (objCodeLineSplit[lineId][0]=='m' && objCodeLineSplit[lineId][1]=='a')
+            {
+                posString= objCodeLineSplit[lineId].split(" ");
+                this.materialNames[this.materialNames.length-1][1] = posString[1];
+            }	
+            
+        }
+    
+        // getTextureName method is used to retrieve the TGA file name for the given material name
+        this.getTextureName = function(matName)
+        {
+            for (var i =0;i<this.materialNames.length;i++)
+                if (matName==this.materialNames[i][0])
+                    return this.materialNames[i][1];
+            return null;
+        }
+    }
+    DownloadObj2(fileName, then)
+    {
+        var xmlhttp = new XMLHttpRequest();
+        var self = this;
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+               if (xmlhttp.status === 200) {
+                   self.LoadObj2(xmlhttp.responseText);
+                   if(then !== undefined)
+                   {
+                       then(self);
+                   }
+               }
+               else if (xmlhttp.status === 400) {
+                  alert('There was an error 400');
+               }
+               else {
+                   alert('something else other than 200 was returned');
+               }
+            }
+        };
+    
+        xmlhttp.open("GET", "Assets/meshes/" + fileName + ".obj", true);
+        xmlhttp.send();
+        
+    }
+
+    LoadObj2(objCode)
+    {
+        var objCodeLineSplit = objCode.split("\n")
+        //console.log(objCodeLineSplit.length)
+        var vp = []
+        var vt = []
+        this.points = []
+        this.uvs = []
+        var tempMinMax= [[],[],[]]
+        var subMeshId=[];
+        var subMeshImageName=[];
+        var subMeshImageId=[];
+        var posString="";
+        var newPos;
+        var mtlFile;
+        
+        var textString;
+        
+        var newText;
+
+        var faceString;
+
+        var pointString, positionIndex, textureIndex;
+        for (var lineId =0; lineId<objCodeLineSplit.length;lineId++)
+        {
+            // "mtllib" keyword in obj file tells which material file is used
+            if (objCodeLineSplit[lineId][0]=='m' && objCodeLineSplit[lineId][1]=='t')
+            {
+                posString= objCodeLineSplit[lineId].split(" ");
+                mtlFile = new MtlParser("Assets/meshes/"+posString[1]);
+            }
+
+            if (objCodeLineSplit[lineId][0]=='v' && objCodeLineSplit[lineId][1]==' ')
+            {
+                posString= objCodeLineSplit[lineId].split(" ");
+                newPos = [parseFloat(posString[1]),parseFloat(posString[2]),parseFloat(posString[3])]
+                vp.push(newPos)
+                if (tempMinMax[0].length==0)
+                {		
+                    tempMinMax[0]=[newPos[0],newPos[0]];
+                    tempMinMax[1]=[newPos[1],newPos[1]];
+                    tempMinMax[2]=[newPos[2],newPos[2]];
+                }
+                else
+                {
+                    if (tempMinMax[0][0]<newPos[0])
+                        tempMinMax[0][0]=newPos[0];
+                    if (tempMinMax[0][1]>newPos[0])
+                        tempMinMax[0][1]=newPos[0];	
+                    if (tempMinMax[1][0]<newPos[1])
+                        tempMinMax[1][0]=newPos[1];
+                    if (tempMinMax[1][1]>newPos[1])
+                        tempMinMax[1][1]=newPos[1];	
+                    if (tempMinMax[2][0]<newPos[2])
+                        tempMinMax[2][0]=newPos[2];
+                    if (tempMinMax[2][1]>newPos[2])
+                        tempMinMax[2][1]=newPos[2];					
+                }
+            }
+            if (objCodeLineSplit[lineId][0]=='v' && objCodeLineSplit[lineId][1]=='t')
+            {
+                textString= objCodeLineSplit[lineId].split(" ")
+                newText = [parseFloat(textString[1]),parseFloat(textString[2])]
+                vt.push(newText)
+            }	
+            if (objCodeLineSplit[lineId][0]=='f' && objCodeLineSplit[lineId][1]==' ')
+            {
+                faceString= objCodeLineSplit[lineId].split(" ")
+                for (var pointId=1;pointId< faceString.length;pointId++)
+                {
+                    pointString = faceString[pointId].split("/")
+                    positionIndex = parseInt(pointString[0])-1
+                    this.points.push(vp[positionIndex])
+                    textureIndex = parseInt(pointString[1])-1
+                    this.uvs.push(vt[textureIndex])
+                }
+            }
+
+            /* "usemtl" keyword tells which material file will be used afterwards.
+            In the material file, you can find the corresponding texture file using
+            the getTextureName method of MtlParser.*/
+
+            if (objCodeLineSplit[lineId][0]=='u' && objCodeLineSplit[lineId][1]=='s')
+            {
+                posString= objCodeLineSplit[lineId].split(" ");
+
+                
+                var textureFileName = mtlFile.getTextureName(posString[1]);
+                
+                // subMeshImageName stores the texture file name, i.e., TGA file name
+                subMeshImageName.push(textureFileName); 
+                
+                /*subMeshImageId is supposed to store the texture object, i.e., the object returned by TGAParser.
+                You can do it in your main program when loading textures from TGA files */
+                subMeshImageId.push(null); 
+
+                /* subMeshId stores the vertex offset when a new material and texture is used.
+                subMeshId will be used when gl.drawArrays is invoked to draw different part of an object, e.g., a car
+                */
+                subMeshId.push(this.points.length);
+            }
+            
+        }
+        
+        console.log(tempMinMax)
+        this.minY = tempMinMax[1][1];
+        subMeshId.push(this.points.length);
+        this.center = vec3((tempMinMax[0][1]+tempMinMax[0][0])*0.5,(tempMinMax[1][1]+tempMinMax[1][0])*0.5,(tempMinMax[2][1]+tempMinMax[2][0])*0.5);
+        this.radius = Math.sqrt((tempMinMax[0][1]-this.center[0])*(tempMinMax[0][1]-this.center[0]) +(tempMinMax[1][1]-this.center[1])*(tempMinMax[1][1]-this.center[1]) +(tempMinMax[2][1]-this.center[2])*(tempMinMax[2][1]-this.center[2]) );
+        console.log("Model :",this.center,"Radius",this.radius);
+        //console.log(this.subMeshImageName);
+
+      //  var obj = new ObjParser();
+
+       // this.points = obj.vertexPositions;
+      //  this.uvs = obj.vertexTextureP;
+        for(let i = 0; i < this.points.length; i++){
+            this.indexs.push(i);
+        }
+        for(let i = 0; i < subMeshId.length-1; i++) {
+            var mp = new MeshPart(subMeshImageName[i], subMeshId[i],  subMeshId[i+1] - subMeshId[i] );
+            if(subMeshImageName[i] !== null)
+            {
+                mp.mainTexture = (new TGAParser("Assets/textures/" + subMeshImageName[i])).texture;
+            }
+           
+            this.meshParts.push(mp);
+        }
+        this.buffersUpdated = false;
+        this.calculateBounds();
+    }
+
 // then is function to run that is passed the mesh after it's downloaded
     // based on https://stackoverflow.com/questions/8567114/how-to-make-an-ajax-call-without-jquery
     DownloadObj(filename, then)
