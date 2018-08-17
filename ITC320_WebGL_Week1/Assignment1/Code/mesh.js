@@ -102,13 +102,15 @@ class Mesh {
          *
          * @type     {boolean}
          */
-        if (typeof ANGLE_instanced_arrays === 'undefined' || !ANGLE_instanced_arrays) {
+        if (typeof gl.ANGLE_instanced_arrays === 'undefined' || !gl.ANGLE_instanced_arrays) {
             this.enableInstancing = false;
         } else {
             this.enableInstancing = true;
         }
 
         this.meshParts = [];
+
+        this.mtlFilenames = [];
 
         this.bounds = new BoundingBox();
     }
@@ -119,7 +121,7 @@ class Mesh {
      * 
      * @param {camera} camera 
      */
-    draw(camera) {
+    draw(camera, time) {
         // If any data needs to be copied to buffers, do so now.
         if (!this.buffersUpdated) {
             this.updateBuffers();
@@ -153,7 +155,7 @@ class Mesh {
             } else { continue; }
             gl.uniformMatrix4fv(part.shader.uViewProjectionMatrix, false, flatten(camera.viewProjection));
 
-            gl.uniform1f(part.shader.uTime, timing.currentTime);
+            gl.uniform1f(part.shader.uTime, time || 0);
             // Point the shader to the vertex/normal/color buffers (if the shader uses them).
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
             gl.vertexAttribPointer(part.shader.aPosition, 3, gl.FLOAT, false, 0, 0);
@@ -182,33 +184,34 @@ class Mesh {
 
                 // Point the shader to the instance buffer.
                 gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
-                gl.vertexAttribPointer(part.shader.aInstanceWorldMatrix, 16, gl.FLOAT, false, 0, 0);
-                ANGLE_instanced_arrays.vertexAttribDivisorANGLE(part.shader.aInstanceWorldMatrix, 1);
 
+
+
+                part.shader.matrixAttribPointerInstanced(part.shader.aInstanceWorldMatrix);
+               // gl.vertexAttribPointer(part.shader.aInstanceWorldMatrix, 16, gl.FLOAT, false, 0, 0);
                 // Tell the shader that the instance data is an array.
-                gl.enableVertexAttribArray(part.shader.aInstanceWorldMatrix);
 
                 // gl.uniformMatrix4fv(this.shader.uModelViewMatrix, false, flatten(translate(0, 0, 0)));
                 // Draw the instances.
-                ANGLE_instanced_arrays.drawElementsInstancedANGLE(gl.TRIANGLES, part.count, gl.UNSIGNED_SHORT, part.offset, this.instances.length);
+                gl.ANGLE_instanced_arrays.drawElementsInstancedANGLE(gl.TRIANGLES, part.count, gl.UNSIGNED_SHORT, part.offset*2, this.instances.length);
 
                 // Add the polygon count (for statistics).
-               // timing.polyCount += (part.count / 3) * instances.length;
+                game.timing.polyCount += (part.count / 3) * this.instances.length;
             }
             else {
                 for (let i = 0; i < this.instances.length; i++) {
                     if (part.shader.aInstanceWorldMatrix > -1) {
-                        gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
+                        //gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
                         // Tell the shader that the instance data is uniform.
-                        gl.disableVertexAttribArray(part.shader.aInstanceWorldMatrix);
-                        gl.bufferData(gl.ARRAY_BUFFER, flatten(this.instances[i]), gl.STATIC_DRAW);
+                       // gl.disableVertexAttribArray(part.shader.aInstanceWorldMatrix);
+                       // gl.bufferData(gl.ARRAY_BUFFER, flatten(this.instances[i]), gl.STATIC_DRAW);
                         part.shader.matrixAttribPointer(part.shader.aInstanceWorldMatrix, this.instances[i]);
                       //  gl.vertexAttribPointer(part.shader.aInstanceWorldMatrix, 16, gl.FLOAT, false, 0, 0);
                      //  gl.vertexAttrib(part.shader.aInstanceWorldMatrix, flatten());
                     }
                       gl.uniformMatrix4fv(part.shader.uModelViewMatrix, false, flatten(translate(0, 0, 0)));
                     gl.drawElements(gl.TRIANGLES, part.count, gl.UNSIGNED_SHORT, part.offset*2);
-                   // timing.polyCount += part.count / 3;
+                    game.timing.polyCount += part.count / 3;
                 }
             }
         }
@@ -244,6 +247,7 @@ class Mesh {
     updateInstances() {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(this.instances), gl.STATIC_DRAW);
+        
         this.instancesUpdated = true;
     }
 
@@ -341,18 +345,23 @@ class Mesh {
     }
 
 
-    DownloadMtl(fileName, then)
+    downloadMtl(fileName, then)
     {
         var xmlhttp = new XMLHttpRequest();
         var self = this;
         xmlhttp.onreadystatechange = function() {
             if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                if (xmlhttp.status === 200) {
-                   self.LoadObj2(xmlhttp.responseText);
-                   if(then !== undefined)
-                   {
-                       then(self);
-                   }
+                    let mtl = new MtlParser(xmlhttp.responseText);
+                    self.applyMtl(mtl);
+                    if(self.mtlFilenames.length > 0)
+                    {
+                        let filename = self.mtlFilenames.splice(0, 1)[0];
+                        self.downloadMtl(filename, then);
+                    } else if(then !== undefined)
+                    {
+                        then(self);
+                    }
                }
                else if (xmlhttp.status === 400) {
                   alert('There was an error 400');
@@ -363,44 +372,9 @@ class Mesh {
             }
         };
     
-        xmlhttp.open("GET", "Assets/meshes/" + fileName + ".obj", true);
+        xmlhttp.open("GET", fileName, true);
         xmlhttp.send();
 
-    LoadMtl(mtlCode)
-    {
-        mtlCode = loadFileAJAX(fileName);
-        if (!mtlCode) {
-           alert("Could not material source: "+fileName);
-        }
-        
-        var objCodeLineSplit = mtlCode.split("\n")
-    
-        this.materialNames = [];
-    
-        // establish the correspondence between material name and texture (TGA) file name 
-        for (var lineId =0; lineId<objCodeLineSplit.length;lineId++)
-        {
-            if (objCodeLineSplit[lineId][0]=='n' && objCodeLineSplit[lineId][1]=='e')
-            {
-                posString= objCodeLineSplit[lineId].split(" ");
-                this.materialNames.push([posString[1],null]);
-            }
-            if (objCodeLineSplit[lineId][0]=='m' && objCodeLineSplit[lineId][1]=='a')
-            {
-                posString= objCodeLineSplit[lineId].split(" ");
-                this.materialNames[this.materialNames.length-1][1] = posString[1];
-            }	
-            
-        }
-    
-        // getTextureName method is used to retrieve the TGA file name for the given material name
-        this.getTextureName = function(matName)
-        {
-            for (var i =0;i<this.materialNames.length;i++)
-                if (matName==this.materialNames[i][0])
-                    return this.materialNames[i][1];
-            return null;
-        }
     }
     DownloadObj2(fileName, then)
     {
@@ -409,12 +383,8 @@ class Mesh {
         xmlhttp.onreadystatechange = function() {
             if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                if (xmlhttp.status === 200) {
-                   self.LoadObj2(xmlhttp.responseText);
-                   if(then !== undefined)
-                   {
-                       then(self);
-                   }
-               }
+                   self.LoadObj2(xmlhttp.responseText, then);
+                }
                else if (xmlhttp.status === 400) {
                   alert('There was an error 400');
                }
@@ -429,81 +399,44 @@ class Mesh {
         
     }
 
-    LoadObj2(objCode)
+    LoadObj2(objCode, then)
     {
-        var objCodeLineSplit = objCode.split("\n")
-        //console.log(objCodeLineSplit.length)
-        var vp = []
-        var vt = []
-        this.points = []
-        this.uvs = []
-        var tempMinMax= [[],[],[]]
+        var objCodeLineSplit = objCode.split("\n");
         var subMeshId=[];
-        var subMeshImageName=[];
-        var subMeshImageId=[];
-        var posString="";
-        var newPos;
-        var mtlFile;
-        
-        var textString;
-        
-        var newText;
-
-        var faceString;
-
-        var pointString, positionIndex, textureIndex;
-        for (var lineId =0; lineId<objCodeLineSplit.length;lineId++)
+        var subMeshMaterialName=[];
+        var vt = [];
+        var vp = [];
+        for (var lineId = 0; lineId<objCodeLineSplit.length; lineId++)
         {
             // "mtllib" keyword in obj file tells which material file is used
-            if (objCodeLineSplit[lineId][0]=='m' && objCodeLineSplit[lineId][1]=='t')
+            if (objCodeLineSplit[lineId][0]==='m' && objCodeLineSplit[lineId][1]==='t')
             {
-                posString= objCodeLineSplit[lineId].split(" ");
-                mtlFile = new MtlParser("Assets/meshes/"+posString[1]);
+                let posString= objCodeLineSplit[lineId].split(" ");
+                this.mtlFilenames.push("Assets/meshes/"+posString[1]);
             }
 
-            if (objCodeLineSplit[lineId][0]=='v' && objCodeLineSplit[lineId][1]==' ')
+            if (objCodeLineSplit[lineId][0]==='v' && objCodeLineSplit[lineId][1]===' ')
             {
-                posString= objCodeLineSplit[lineId].split(" ");
-                newPos = [parseFloat(posString[1]),parseFloat(posString[2]),parseFloat(posString[3])]
-                vp.push(newPos)
-                if (tempMinMax[0].length==0)
-                {		
-                    tempMinMax[0]=[newPos[0],newPos[0]];
-                    tempMinMax[1]=[newPos[1],newPos[1]];
-                    tempMinMax[2]=[newPos[2],newPos[2]];
-                }
-                else
-                {
-                    if (tempMinMax[0][0]<newPos[0])
-                        tempMinMax[0][0]=newPos[0];
-                    if (tempMinMax[0][1]>newPos[0])
-                        tempMinMax[0][1]=newPos[0];	
-                    if (tempMinMax[1][0]<newPos[1])
-                        tempMinMax[1][0]=newPos[1];
-                    if (tempMinMax[1][1]>newPos[1])
-                        tempMinMax[1][1]=newPos[1];	
-                    if (tempMinMax[2][0]<newPos[2])
-                        tempMinMax[2][0]=newPos[2];
-                    if (tempMinMax[2][1]>newPos[2])
-                        tempMinMax[2][1]=newPos[2];					
-                }
+                let posString= objCodeLineSplit[lineId].split(" ");
+                let newPos = [parseFloat(posString[1]),parseFloat(posString[2]),parseFloat(posString[3])];
+                vp.push(newPos);
             }
-            if (objCodeLineSplit[lineId][0]=='v' && objCodeLineSplit[lineId][1]=='t')
+            if (objCodeLineSplit[lineId][0]==='v' && objCodeLineSplit[lineId][1]==='t')
             {
-                textString= objCodeLineSplit[lineId].split(" ")
-                newText = [parseFloat(textString[1]),parseFloat(textString[2])]
-                vt.push(newText)
+                let textString= objCodeLineSplit[lineId].split(" ");
+                let newText = [parseFloat(textString[1]),parseFloat(textString[2])];
+                vt.push(newText);
             }	
-            if (objCodeLineSplit[lineId][0]=='f' && objCodeLineSplit[lineId][1]==' ')
+            if (objCodeLineSplit[lineId][0]==='f' && objCodeLineSplit[lineId][1]===' ')
             {
-                faceString= objCodeLineSplit[lineId].split(" ")
-                for (var pointId=1;pointId< faceString.length;pointId++)
+                let faceString= objCodeLineSplit[lineId].split(" ");
+                for (var pointId = 1; pointId < faceString.length; pointId++)
                 {
-                    pointString = faceString[pointId].split("/")
-                    positionIndex = parseInt(pointString[0])-1
-                    this.points.push(vp[positionIndex])
-                    textureIndex = parseInt(pointString[1])-1
-                    this.uvs.push(vt[textureIndex])
+                    let pointString = faceString[pointId].split("/");
+                    let positionIndex = parseInt(pointString[0])-1;
+                    this.points.push(vp[positionIndex]);
+                    let textureIndex = parseInt(pointString[1])-1;
+                    this.uvs.push(vt[textureIndex]);
                 }
             }
 
@@ -511,20 +444,13 @@ class Mesh {
             In the material file, you can find the corresponding texture file using
             the getTextureName method of MtlParser.*/
 
-            if (objCodeLineSplit[lineId][0]=='u' && objCodeLineSplit[lineId][1]=='s')
+            if (objCodeLineSplit[lineId][0]==='u' && objCodeLineSplit[lineId][1]==='s')
             {
-                posString= objCodeLineSplit[lineId].split(" ");
+                let posString= objCodeLineSplit[lineId].split(" ");
 
-                
-                var textureFileName = mtlFile.getTextureName(posString[1]);
-                
                 // subMeshImageName stores the texture file name, i.e., TGA file name
-                subMeshImageName.push(textureFileName); 
+                subMeshMaterialName.push(posString[1]); 
                 
-                /*subMeshImageId is supposed to store the texture object, i.e., the object returned by TGAParser.
-                You can do it in your main program when loading textures from TGA files */
-                subMeshImageId.push(null); 
-
                 /* subMeshId stores the vertex offset when a new material and texture is used.
                 subMeshId will be used when gl.drawArrays is invoked to draw different part of an object, e.g., a car
                 */
@@ -533,32 +459,44 @@ class Mesh {
             
         }
         
-        console.log(tempMinMax)
-        this.minY = tempMinMax[1][1];
+     
         subMeshId.push(this.points.length);
-        this.center = vec3((tempMinMax[0][1]+tempMinMax[0][0])*0.5,(tempMinMax[1][1]+tempMinMax[1][0])*0.5,(tempMinMax[2][1]+tempMinMax[2][0])*0.5);
-        this.radius = Math.sqrt((tempMinMax[0][1]-this.center[0])*(tempMinMax[0][1]-this.center[0]) +(tempMinMax[1][1]-this.center[1])*(tempMinMax[1][1]-this.center[1]) +(tempMinMax[2][1]-this.center[2])*(tempMinMax[2][1]-this.center[2]) );
-        console.log("Model :",this.center,"Radius",this.radius);
-        //console.log(this.subMeshImageName);
 
-      //  var obj = new ObjParser();
-
-       // this.points = obj.vertexPositions;
-      //  this.uvs = obj.vertexTextureP;
-        for(let i = 0; i < this.points.length; i++){
-            this.indexs.push(i);
+        for(let i = 0; i < this.points.length; i++)
+        {
+           this.indexs.push(i);
         }
-        for(let i = 0; i < subMeshId.length-1; i++) {
-            var mp = new MeshPart(subMeshImageName[i], subMeshId[i],  subMeshId[i+1] - subMeshId[i] );
-            if(subMeshImageName[i] !== null)
-            {
-                mp.mainTexture = (new TGAParser("Assets/textures/" + subMeshImageName[i])).texture;
-            }
-           
-            this.meshParts.push(mp);
+        for(let i = 0; i < subMeshId.length-1; i++) 
+        {
+           var mp = new MeshPart(subMeshMaterialName[i], subMeshId[i],  subMeshId[i+1] - subMeshId[i] );
+           this.meshParts.push(mp);
         }
         this.buffersUpdated = false;
         this.calculateBounds();
+        
+        if(this.mtlFilenames.length > 0)
+        {
+           let filename = this.mtlFilenames.splice(0, 1)[0];
+           this.downloadMtl(filename, then);
+        } else if(then !== undefined)
+        {
+           then(self);
+        }
+    }
+
+
+    applyMtl(mtl)
+    {
+        for(let i = 0; i < this.meshParts.length; i++)
+        {
+            let mp = this.meshParts[i];
+            let imageName = mtl.getTextureName(mp.name);
+
+            if(imageName !== null)
+            {
+                mp.mainTexture = (new TGAParser("Assets/textures/" + imageName)).texture;
+            }   
+        }
     }
 
 // then is function to run that is passed the mesh after it's downloaded

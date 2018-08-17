@@ -27,7 +27,7 @@ class Car {
          * 
          * @type {vec3}
          */
-        this.targetDir = vec3(-1,0,0);
+        this.targetDir = vec3(1,0,0);
 
         /**
          * The current speed of the car.
@@ -230,7 +230,7 @@ class Car {
             {
                 let part = self.mesh.meshParts[i];
                 if(allPaintedPartsFromRemainder.indexOf(i) >= 0)
-                part.shader = new Shader(vertexShaderGLSL, fragmentShaderGLSL_CarPaint);
+                    part.shader = new Shader(Game.GLSL.vsStandard, Game.GLSL.fsCarPaint);
                 // This was used for working out which part was which.
                //let check = document.createElement('input');
                //check.setAttribute("type", "checkbox");
@@ -327,7 +327,7 @@ class Car {
         let slideRotation = rotate(this.slide*RADIANS_TO_DEGREES, vec3(0,1,0));
         let tiltRotation = rotate(this.tilt*RADIANS_TO_DEGREES, vec3(0,0,1));
         let yOffset = 0;
-        if(this.mesh.bounds.min !== null)
+        if(this.blWheelMesh.bounds.min !== null)
         {
             yOffset = this.blWheelMesh.bounds.min[1];
         }
@@ -372,10 +372,11 @@ class Car {
      * Draw all of the car meshes. Should only be called once per frame (not once per vehicle).
      * 
      * @param {Camera}  camera  The camera to use to draw the meshes.
+     * @param {float}   time    The current time used to colour the car.
      */
-    draw(camera)
+    draw(camera, time)
     {
-        this.mesh.draw(camera);
+        this.mesh.draw(camera, time);
         this.flBrakeMesh.draw(camera);
         this.frBrakeMesh.draw(camera);
         this.flWheelMesh.draw(camera);

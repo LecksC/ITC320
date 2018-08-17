@@ -39,8 +39,29 @@ class Shader {
         gl.vertexAttrib4f(loc+1, mat[1], mat[5], mat[9], mat[13] );
         gl.vertexAttrib4f(loc+2, mat[2], mat[6], mat[10], mat[14] );
         gl.vertexAttrib4f(loc+3, mat[3], mat[7], mat[11], mat[15] );
-   }
 
+        gl.disableVertexAttribArray(loc);
+        gl.disableVertexAttribArray(loc+1);
+        gl.disableVertexAttribArray(loc+2);
+        gl.disableVertexAttribArray(loc+3);
+   }
+   matrixAttribPointerInstanced(loc) {
+        gl.vertexAttribPointer(loc  , 4, gl.FLOAT, false, 64, 0);
+        gl.vertexAttribPointer(loc+1, 4, gl.FLOAT, false, 64, 16);
+        gl.vertexAttribPointer(loc+2, 4, gl.FLOAT, false, 64, 32);
+        gl.vertexAttribPointer(loc+3, 4, gl.FLOAT, false, 64, 48);
+
+        
+        gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc, 1);
+        gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc+1, 1);
+        gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc+2, 1);
+        gl.ANGLE_instanced_arrays.vertexAttribDivisorANGLE(loc+3, 1);
+
+        gl.enableVertexAttribArray(loc);
+        gl.enableVertexAttribArray(loc+1);
+        gl.enableVertexAttribArray(loc+2);
+        gl.enableVertexAttribArray(loc+3);
+    }
 
  
 }

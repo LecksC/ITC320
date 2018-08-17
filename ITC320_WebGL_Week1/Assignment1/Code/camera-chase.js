@@ -56,7 +56,7 @@ class chaseCamera {
         this.at = this.target.position; 
         let behind = subtract(this.target.position, scale(this.distance, this.target.forwards));
         behind[1] = this.height;
-        this.eye = mix(this.eye, behind, deltaTime* 15);
+        this.eye = behind;
 
         // Find the destination height.
       // var destHeight = 0;

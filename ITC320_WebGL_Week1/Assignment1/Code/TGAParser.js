@@ -1,3 +1,4 @@
+tgaCache = {};
 //Callback function that is called once the data for the TGA is downloaded. Also takes a reference to the parser.
 //Parses and sets the texture data in WebGL
 function  parseTGAFile(binaryData,parser)
@@ -54,8 +55,14 @@ function  parseTGAFile(binaryData,parser)
 }
 
 function TGAParser(fileName){
+	if(tgaCache[fileName] !== undefined)
+	{
+		this.texture = tgaCache[fileName];
+		return;
+	}
     //Set texture reference to null
 	this.texture= gl.createTexture();
+	tgaCache[fileName] = this.texture;
 	gl.bindTexture(gl.TEXTURE_2D, this.texture);
   
     // Because images have to be download over the internet
@@ -73,9 +80,7 @@ function TGAParser(fileName){
     const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                   width, height, border, srcFormat, srcType,
-                  pixel);
-	console.log("Request texture data "+fileName );
-	
+                  pixel);	
 	//Create a HTTP request
 	var oReq;   
 	if (window.XMLHttpRequest)

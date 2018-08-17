@@ -15,8 +15,7 @@ class MeshPart {
         this.mainTexture = null;
         this.offset = offset;
         this.count = vertcount;
-        this.shader = new Shader(vertexShaderGLSL, fragmentShaderGLSL);
-        
+        this.shader = new Shader(Game.GLSL.vsStandard, Game.GLSL.fsTextured);
     }
 }
 

@@ -25,6 +25,7 @@ class firstPersonCamera {
         this.projection = null;
         this.view = null;
         this.viewProjection = null;
+        this.speed = 10;
     }
 
 
@@ -77,8 +78,8 @@ class firstPersonCamera {
     move(forward, right) {
         var fwdvec = rotateAroundAxis(vec3(0, 0, 1), vec3(0, 1, 0), this.rotationX);
         var rightvec = rotateAroundAxis(vec3(-1, 0, 0), vec3(0, 1, 0), this.rotationX);
-        this.position = add(this.position, scale(forward, fwdvec));
-        this.position = add(this.position, scale(right, rightvec));
+        this.position = add(this.position, scale(forward * this.speed, fwdvec));
+        this.position = add(this.position, scale(right * this.speed, rightvec));
     }
 
     /**

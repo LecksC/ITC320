@@ -629,20 +629,25 @@ function flatten( v )
 
     if ( Array.isArray(v[0]) ) {
         elemsAreArrays = true;
-        n *= v[0].length;
     }
 
-    var floats = new Float32Array( n );
+    var floats = null;
 
     if ( elemsAreArrays ) {
         var idx = 0;
         for ( var i = 0; i < v.length; ++i ) {
-            for ( var j = 0; j < v[i].length; ++j ) {
-                floats[idx++] = v[i][j];
+            var flat = flatten(v[i]);
+            if(floats === null)
+            {
+                floats = new Float32Array( flat.length * n );
+            }
+            for ( var j = 0; j < flat.length; ++j ) {
+                floats[idx++] = flat[j];
             }
         }
     }
     else {
+        floats =  new Float32Array( n );
         for ( var i = 0; i < v.length; ++i ) {
             floats[i] = v[i];
         }

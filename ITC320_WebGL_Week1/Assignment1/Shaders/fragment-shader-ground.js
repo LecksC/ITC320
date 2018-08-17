@@ -4,23 +4,15 @@
  * 
  * @author Lecks Chester
  */
-var script = document.createElement('script');
-script.id="fragment-shader";
-script.type = "x-shader/x-vertex";
-var fragmentShaderGLSL = 
+
+Game.GLSL.fsGround = 
 shaderHeader +`
 varying highp vec2 vTexCoords;
 uniform sampler2D uTextureSampler;
 
-uniform float uIsSelected;
 void main() {
-	if(uIsSelected > 0.5)
-	{
-		gl_FragColor = vec4(1.0,1.0,1.0,1.0);
-		return;
-	}
 	vec4 color = texture2D(uTextureSampler, vTexCoords);
-
+	color *= texture2D(uTextureSampler, vTexCoords*200.0);
 	
 	//color masking
 	//vec3 diff = color.xyz - vec3(227.0/255.0, 39.0/255.0, 229.0/255.0);
@@ -35,5 +27,3 @@ void main() {
 	//gl_FragColor = texture2D(uTextureSampler, vTexCoords);
 }
 `;
-script.innerHTML = fragmentShaderGLSL;
-document.getElementsByTagName('head')[0].appendChild(script);

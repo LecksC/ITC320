@@ -1,38 +1,32 @@
 
-function MtlParser(fileName){
-	objCode = loadFileAJAX(fileName);
-    if (!objCode) {
-       alert("Could not material source: "+fileName);
-    }
-	
-	var objCodeLineSplit = objCode.split("\n")
-
-	this.materialNames = [];
-
-	// establish the correspondence between material name and texture (TGA) file name 
-	for (var lineId =0; lineId<objCodeLineSplit.length;lineId++)
+class MtlParser {
+	constructor(mtlCode)
 	{
-		if (objCodeLineSplit[lineId][0]=='n' && objCodeLineSplit[lineId][1]=='e')
+		let mtlCodeLineSplit = mtlCode.split("\n");
+		this.materialNames = [];
+
+		// establish the correspondence between material name and texture (TGA) file name 
+		for (var lineId =0; lineId < mtlCodeLineSplit.length; lineId++)
 		{
-			posString= objCodeLineSplit[lineId].split(" ");
-			this.materialNames.push([posString[1],null]);
+			if (mtlCodeLineSplit[lineId][0] === 'n' && mtlCodeLineSplit[lineId][1] === 'e')
+			{
+				let posString= mtlCodeLineSplit[lineId].split(" ");
+				this.materialNames.push([posString[1],null]);
+			}
+			if (mtlCodeLineSplit[lineId][0] === 'm' && mtlCodeLineSplit[lineId][1] === 'a')
+			{
+				let posString= mtlCodeLineSplit[lineId].split(" ");
+				this.materialNames[this.materialNames.length-1][1] = posString[1];
+			}	
+			
 		}
-		if (objCodeLineSplit[lineId][0]=='m' && objCodeLineSplit[lineId][1]=='a')
-		{
-			posString= objCodeLineSplit[lineId].split(" ");
-			this.materialNames[this.materialNames.length-1][1] = posString[1];
-		}	
-		
 	}
-
 	// getTextureName method is used to retrieve the TGA file name for the given material name
-	this.getTextureName = function(matName)
+	getTextureName(matName)
 	{
-		for (var i =0;i<this.materialNames.length;i++)
-			if (matName==this.materialNames[i][0])
+		for (let i = 0; i < this.materialNames.length; i++)
+			if (matName === this.materialNames[i][0])
 				return this.materialNames[i][1];
 		return null;
 	}
-	//console.log(this.materialNames);
-
 }
