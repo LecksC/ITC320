@@ -3,9 +3,10 @@ attribute vec2 aPosition;
 attribute vec3 aColour;
 varying vec3 vColour;
 uniform float uRotation;
+uniform vec2 uPosition;
 uniform vec2 uPivot;
-
-void main() 
+void 
+main() 
 {
     float sinr = sin(uRotation);
     float cosr = cos(uRotation);
@@ -15,5 +16,5 @@ void main()
             0.0,    0.0,     1.0,   0.0,
             0.0,    0.0,     0.0,   1.0);
 	vColour=aColour;
-    gl_Position = vec4(aPosition - uPivot,0.0,1.0) * rot + vec4(uPivot,0.0,0.0); 
+    gl_Position = vec4(aPosition - uPivot,0.0,1.0) * rot + vec4(uPivot + uPosition,0.0,0.0); 
 }`;

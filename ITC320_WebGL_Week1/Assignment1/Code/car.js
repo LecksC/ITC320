@@ -244,17 +244,17 @@ class Car {
                 if(allPaintedPartsFromRemainder.indexOf(i) >= 0)
                     part.shader = new Shader(gl, Game.GLSL.vsStandard, Game.GLSL.fsCarPaint);
                 // This was used for working out which part was which.
-               //let check = document.createElement('input');
-               //check.setAttribute("type", "checkbox");
-               //document.getElementsByTagName('body')[0].appendChild(check);
-               //var span = document.createElement('span');
-               //span.innerHTML = i;
-               //document.getElementsByTagName('body')[0].appendChild(span);
+                        //let check = document.createElement('input');
+                        //check.setAttribute("type", "checkbox");
+                        //document.getElementsByTagName('body')[0].appendChild(check);
+                        //var span = document.createElement('span');
+                        //span.innerHTML = i;
+                        //document.getElementsByTagName('body')[0].appendChild(span);
 
-               //check.onchange = function() { 
-               //    gl.useProgram(self.mesh.meshParts[i].shader.program);
-               //    gl.uniform1f(self.mesh.meshParts[i].shader.uIsSelected, check.checked ? 1.0 : 0.0);
-               //};
+                        //check.onchange = function() { 
+                        //    gl.useProgram(self.mesh.meshParts[i].shader.program);
+                        //    gl.uniform1f(self.mesh.meshParts[i].shader.uIsSelected, check.checked ? 1.0 : 0.0);
+                        //};
             }
             });
     }
@@ -382,7 +382,7 @@ class Car {
         wheel.addInstance(mult(baseMatrix,mult(translate(wheel.bounds.center), mult(rotation, translate(scale(-1,wheel.bounds.center))))));
     }
 
-    
+
     /**
      * Draw all of the car meshes. Should only be called once per frame (not once per vehicle).
      * 

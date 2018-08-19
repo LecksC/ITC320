@@ -8,17 +8,19 @@ var uRotation;
 var vPivot;
 var uPivot;
 
+var vPosition;
 var lastFrameTime = 0;
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
-
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     //
     //  Initialize our data for the Triangle
     //
+
+    
     fRotation = 0;
 
     // First, initialize the corners of our triangle with three points.
@@ -82,8 +84,13 @@ function render(time)
     gl.clear( gl.COLOR_BUFFER_BIT );
     fRotation += deltaTime*0.01;
     gl.uniform1f(uRotation, fRotation ); 
+    
     gl.uniform2f(uPivot, vPivot[0], vPivot[1] ); 
+    
+    gl.uniform2f(uPosition, 0,0 ); 
+    gl.drawArrays( gl.TRIANGLES, 0, 3 );
 
+    gl.uniform2f(uPosition, 0.75,0 ); 
     gl.drawArrays( gl.TRIANGLES, 0, 3 );
     
 	this.requestAnimationFrame(render);
