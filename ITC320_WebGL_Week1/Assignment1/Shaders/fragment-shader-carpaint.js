@@ -1,13 +1,13 @@
 "use strict";
 /**
- * Simple fragment shader that displays the colour passed in from the vertex shader.
+ * Fragment shader that switches r/g/b colours based on a time value.
  * 
  * @author Lecks Chester
  */
 
 Game.GLSL.fsCarPaint = 
 shaderHeader +`
-varying highp vec2 vTexCoords;
+varying vec2 vTexCoords;
 uniform sampler2D uTextureSampler;
 
 uniform float uTime;

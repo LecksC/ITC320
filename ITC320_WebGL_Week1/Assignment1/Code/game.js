@@ -1,17 +1,89 @@
-
-var gl;
-
+"use strict";
+/**
+ * Global variable to hold a reference the instance of the application.
+ * 
+ * @type {Game}
+ */
 var game;
+/**
+ * Class to initialize, store data for, and run the main loop for the application.
+ * 
+ */
 class Game {
+    /**
+     * Initializes the application.
+     * 
+     */
     constructor() {
-        this.cameraIndex = 0;
-        this.cameras = [];
-        this.car;
-        this.h1;
-        this.h2;
-        this.h3;
-        this.floor;
+        /**
+         * The canvas to draw the WebGL output to.
+         * 
+         * @type {CanvasDOMElement}     
+         */
         this.canvas;
+
+        /**
+         * The WebGL Context.
+         * 
+         * @type {WebGLContext}
+         */
+        this.gl;
+
+        /**
+         * The index of the current camera.
+         * 
+         * @type {integer}
+         */
+        this.cameraIndex = 0;
+
+        /**
+         * References to all of the cameras.
+         * 
+         * @type {Camera[]}
+         */
+        this.cameras = [];
+
+        /**
+         * The Car.
+         * 
+         * @type {Car}
+         */
+        this.car;
+
+        /**
+         * The first building mesh.
+         * 
+         * @type {Mesh}
+         */
+        this.h1;
+
+        /**
+         * The second building mesh.
+         * 
+         * @type {Mesh}
+         */
+
+        this.h2;
+        /**
+         * The third building mesh.
+         * 
+         * @type {Mesh}
+         */
+        this.h3;
+
+        /**
+         * The floor mesh.
+         * 
+         * @type {Mesh}
+         */
+        this.floor;
+
+        /**
+         * The number of layers of buildings. More is slower (adds rows of buildings on 3 sides).
+         * 
+         * @type {integer}
+         */
+        this.buildingLayers = 10;
 
         /**
          * Values used to keep track of time and statistics.
@@ -24,7 +96,8 @@ class Game {
             previousFrameTime: 0,
             elapsedTime: 0,
             frameCount: 0,
-            polyCount: 0
+            polyCount: 0,
+            drawCallCount: 0
         };
 
 
@@ -47,26 +120,67 @@ class Game {
         this.init();
     }
 
+
+    /**
+     * Initializes WebGL, the scene, and events.
+     * 
+     */
     init()
     {
         // Initialize WebGL.
         this.canvas = document.getElementById( "gl-canvas" );
-        gl = WebGLUtils.setupWebGL( this.canvas );
-        if ( !gl ) { alert( "WebGL isn't available" ); }
-        gl.ANGLE_instanced_arrays = gl.getExtension("ANGLE_instanced_arrays");
-        gl.viewport( 0, 0,  this.canvas.width,  this.canvas.height );
-        gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-        gl.enable(gl.DEPTH_TEST);
+        this.gl = WebGLUtils.setupWebGL( this.canvas );
+        if ( !this.gl ) { alert( "WebGL isn't available" ); }
+        this.gl.viewport( 0, 0,  this.canvas.width,  this.canvas.height );
+        this.gl.clearColor( 0.0, 138/255, 255/255, 1.0 );
+        this.gl.enable(this.gl.DEPTH_TEST);
 
+        // Load the hardware instancing extension.
+        this.gl.ANGLE_instanced_arrays = this.gl.getExtension("ANGLE_instanced_arrays");
+
+        // Initialize the rest of the scene/page.
+        this.initScene();
+        this.initCameras();
+        this.initEventHandlers();
+        requestAnimationFrame(this.render.bind(this));
+    }
+
+
+    /**
+     * Initializes cameras.
+     * 
+     */
+    initCameras()
+    {
+        var orbit = new OrbitCamera();
+        orbit.target = this.car;
+        var chase = new ChaseCamera();
+        chase.target = this.car;
+        this.cameras.push(orbit);
+        this.cameras.push(chase);
+        this.cameras.push(new FirstPersonCamera());
+        document.getElementById('instructions').innerHTML = this.cameras[this.cameraIndex].instructions;
+    }
+
+
+    /**
+     * Initializes the scene (buildings, the ground and the car).
+     * 
+     */
+    initScene()
+    {
+        let self = this;
         // Initialize car.
-        this.car = new Car();
+        this.car = new Car(this.gl);
         
         // Initialize buildings.
-        this.h1 = new Mesh();
+        this.h1 = new Mesh(this.gl);
         let h1scale = 0.3;
         let h2scale = 5.0;
         let h3scale = 25.0;
-        this.h1.DownloadObj2("H1", 
+
+        //Create a couple of strips of 'H1' buildings.
+        this.h1.downloadObj(this.gl, "H1", 
             function(mesh) {
                 let height = -mesh.bounds.min[1];
                 let center = mesh.bounds.center;
@@ -106,8 +220,10 @@ class Game {
             }
         );
 
-        this.h2 = new Mesh();
-        this.h2.DownloadObj2("H2", 
+        
+        // Create layers of 'H2' buildings covering 3 sides.
+        this.h2 = new Mesh(this.gl);
+        this.h2.downloadObj(this.gl, "H2", 
             function(mesh) {
                 let height = -mesh.bounds.min[1];
                 let center = mesh.bounds.center;
@@ -120,7 +236,7 @@ class Game {
                 let x = -countx*spacingx*0.5;
                 let z = -countz*spacingz*0.5;
                 
-                for(let t = 0; t < 15; t++)
+                for(let t = 0; t < self.buildingLayers; t++)
                 {
                     for(let xi = 0; xi <= countx; xi++)
                     {
@@ -153,10 +269,10 @@ class Game {
                 }
 
             });
-    // h2.addInstance(translate([-2, 0, 0]));
-    //
-        this.h3 = new Mesh();
-        this.h3.DownloadObj2("H3", 
+ 
+        // Create a couple of h3 buildings near the center, and a row of them at one end.
+        this.h3 = new Mesh(this.gl);
+        this.h3.downloadObj(this.gl, "H3", 
             function(mesh) {
                 mesh.addInstance(mult(translate([-18, 0, 35]), scalem([h3scale,h3scale,h3scale])));
                 mesh.addInstance(mult(translate([56, 0, 36]),  mult(rotate(270, [0,1,0]), scalem([h3scale,h3scale,h3scale]))));
@@ -167,31 +283,23 @@ class Game {
             });
 
         // Initialize floor.
-        this.floor = new Mesh();
-        this.floor.DownloadObj2("floor", 
+        this.floor = new Mesh(this.gl);
+        this.floor.downloadObj(this.gl, "floor", 
             function(mesh) {
                 mesh.addInstance(mult(translate([0, 0, 0]), scalem([40,1,40])));
-                mesh.meshParts[0].shader = new Shader(Game.GLSL.vsStandard, Game.GLSL.fsGround);
+                mesh.meshParts[0].shader = new Shader(self.gl, Game.GLSL.vsStandard, Game.GLSL.fsGround);
             });
-   
-        // Initialize cameras
-        var orbit = new orbitCamera();
-        orbit.target = this.car;
-        var chase = new chaseCamera();
-        chase.target = this.car;
-        
-        this.cameras.push(orbit);
-        this.cameras.push(chase);
-        this.cameras.push(new firstPersonCamera());
-
-        this.initEventHandlers();
-        
-        requestAnimationFrame(this.render.bind(this));
     }
 
+
+    /**
+     * Updates and renders the scene.
+     * 
+     * @param {float}   frameTime   The time since the applications started. Provided automatically by requestAnimationFrame.
+     */
     render(frameTime)
     {
-        gl.clear( gl.COLOR_BUFFER_BIT |gl.DEPTH_BUFFER_BIT );
+        this.gl.clear( this.gl.COLOR_BUFFER_BIT |this.gl.DEPTH_BUFFER_BIT );
         this.handleTiming(frameTime);
         this.handleInput();
         this.car.resetInstances();
@@ -200,11 +308,11 @@ class Game {
         camera.update(this.timing.deltaTime);
         camera.updateMatrices();
         
-        this.car.draw(camera, this.timing.currentTime);
-        this.h1.draw(camera);
-        this.h2.draw(camera);
-        this.h3.draw(camera);
-        this.floor.draw(camera);
+        this.car.draw(this.gl, camera, this.timing.currentTime);
+        this.h1.draw(this.gl, camera);
+        this.h2.draw(this.gl, camera);
+        this.h3.draw(this.gl, camera);
+        this.floor.draw(this.gl, camera);
         requestAnimationFrame(this.render.bind(this));
     }
 
@@ -215,7 +323,6 @@ class Game {
      */
     handleTiming(frameTime) {
         if(frameTime !== 0.0) {
-            
             this.timing.deltaTime = (frameTime * 0.001) - this.timing.previousFrameTime;
             this.timing.currentTime += this.timing.deltaTime; 
             this.timing.previousFrameTime = frameTime * 0.001;
@@ -226,8 +333,10 @@ class Game {
                 this.timing.elapsedTime -= 1;
                 document.getElementById('fps').innerHTML = fps;
                 document.getElementById('polyCount').innerHTML = this.timing.polyCount;
+                document.getElementById('drawCallCount').innerHTML = this.timing.drawCallCount;
             }
         }
+        this.timing.drawCallCount = 0;
         this.timing.polyCount = 0;
         this.timing.frameCount++;
     }
@@ -288,6 +397,7 @@ class Game {
                 case "c":
                 case "C": {
                     self.cameraIndex = (self.cameraIndex+1)%self.cameras.length;
+                    document.getElementById('instructions').innerHTML = self.cameras[self.cameraIndex].instructions;
                     self.onResizeCanvas();
                     break;
                 }
@@ -325,10 +435,10 @@ class Game {
         if (this.canvas.width !== width || this.canvas.height !== height) {
             this.canvas.width = width;
             this.canvas.height = height;
-            gl.viewport(0, 0, this.canvas.width, this.canvas.height); 
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height); 
         }
         
-        this.cameras[this.cameraIndex].aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        this.cameras[this.cameraIndex].aspect = this.gl.canvas.clientWidth / this.gl.canvas.clientHeight;
     }
 
 
@@ -360,7 +470,16 @@ class Game {
         this.cameras[this.cameraIndex].move(forward*this.timing.deltaTime*10,right*this.timing.deltaTime*10);
     }
 }
+/**
+ * An object to store GLSL script source in.
+ * 
+ */
 Game.GLSL = {};
+
+/**
+ * Start the application once scripts have loaded.
+ * 
+ */
 window.onload = function() {
     game = new Game();
 };

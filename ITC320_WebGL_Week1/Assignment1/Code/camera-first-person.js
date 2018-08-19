@@ -4,9 +4,14 @@
  * 
  * @author  Lecks Chester
  */
-class firstPersonCamera {
+class FirstPersonCamera {
+    /**
+     * Initializes the camera and sets default values.
+     * 
+     */
     constructor() {
-        this.name = "Orbit Camera";
+        this.name = "First Person Camera";
+        this.instructions = "WASD to move. Click and drag to look around.";
         // The height above the ground.
         this.personHeight = 1.8;
         // The initial position and rotation.
@@ -20,12 +25,12 @@ class firstPersonCamera {
         this.near = 0.5;
         this.far = 1000;
         this.fieldOfViewY = 70;
-        this.aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        this.aspect = 1;
         // variables to store the matrices in.
         this.projection = null;
         this.view = null;
         this.viewProjection = null;
-        this.speed = 10;
+        this.speed = 2;
     }
 
 
@@ -34,7 +39,6 @@ class firstPersonCamera {
      * 
      */
     updateMatrices() {
-        //  this.projection = ortho(-45, 45, -this.personHeight, -this.personHeight + 90/this.aspect, this.near, this.far);// 
         this.projection = perspective(this.fieldOfViewY, this.aspect, this.near, this.far);
         var eye = this.position;
         var up = vec3(0, 1, 0);
@@ -49,21 +53,10 @@ class firstPersonCamera {
     /**
      * Runs every frame to perform any time-based updates on the camera.
      * 
-     * Currently just handles camera height from the ground.
-     * 
      * @param   {float} deltaTime   the time since the last update in seconds.
      */
     update(deltaTime) {
-        // Find the destination height.
-      // var destHeight = 0;
-      // for (var i = 0; i < heightShapes.length; i++) {
-      //     if (isInConvexPolygon(this.position, heightShapes[i])) {
-      //         destHeight = Math.max(destHeight, heightShapes[i][0][1]);
-      //     }
-      // }
-        // Interpolate towards the destination height over time. Gives a smoother
-        // effect than jumping straight to the height.
-      //  this.position[1] = lerp(this.position[1],destHeight+ this.personHeight, deltaTime*5);
+
     }
 
 

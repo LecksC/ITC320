@@ -8,7 +8,7 @@
 <script type="text/javascript" src="../Common/initShaders3.js"></script>
 <script type="text/javascript" src="../Common/MV.js"></script>
 
-<script type="text/javascript" src="Code/Multiple.js"></script>
+<script type="text/javascript" src="Code/Game.js"></script>
 <script type="text/javascript" src="Shaders/shader-common.js"></script>
 <script type="text/javascript" src="Shaders/vertex-shader-standard.js"></script>
 <script type="text/javascript" src="Shaders/fragment-shader-textured.js"></script>
@@ -24,7 +24,6 @@
 <script type="text/javascript" src="Code/camera-chase.js"></script>
 <script type="text/javascript" src="Code/camera-orbit.js"></script>
 <script type="text/javascript" src="Code/MtlParser.js"></script>
-<script type="text/javascript" src="Code/ObjParser.js"></script>
 <script type="text/javascript" src="Code/TGAParser.js"></script>
 </head>
 
@@ -35,12 +34,9 @@
         <div id="stats" style="position:absolute; top:0; left:0; color: white; font-family: 'Courier New', Courier, monospace">
         FPS: <span id="fps">None yet.</span><br/>
         Polygons: <span id="polyCount">None yet.</span><br/>
-        <form name="settings">
-            <input type="radio" name="quality" id="quality-low" value="low"> Low Quality
-            <input type="radio" name="quality" id="quality-medium" value="medium"> Medium Quality
-            <input type="radio" name="quality" id="quality-high" value="high"> High Quality
-        </form>
-        WASD to move. Click and drag to look around.
+        Draw calls: <span id="drawCallCount">None yet.</span><br/>
+        <br/>
+        <span id="instructions">WASD to move. Click and drag to look around.</span> C to change camera mode.
         </div>
 </body>
 </html>

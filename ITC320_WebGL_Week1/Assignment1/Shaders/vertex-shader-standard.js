@@ -1,6 +1,6 @@
 "use strict";
 /**
- * Standard vertex shader that extracts a 2d offset, 1d rotation and 2d scale from a float4.
+ * Standard vertex shader that uses a attribute for the world matrix (for hardware instancing).
  * 
  * Supports instancing.
  * 
@@ -15,7 +15,7 @@ uniform mat4 uViewProjectionMatrix;
 
 attribute mat4 aInstanceWorldMatrix;
 
-varying highp vec2 vTexCoords;
+varying vec2 vTexCoords;
 
 void main() {
 	mat4 wvp =  uViewProjectionMatrix * aInstanceWorldMatrix;

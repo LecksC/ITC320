@@ -5,30 +5,41 @@
  * @author  Lecks Chester
  */
 class Shader { 
-    constructor(vertexShaderName, fragmentShaderName) {
+    /**
+     * Compiles the shader and finds the locations of its attributes and uniform values.
+     * 
+     * It does not matter if not all of the locations exist.
+     * 
+     * @param {WebGLContext}    gl                  The WebGL Context. 
+     * @param {string}          vertexShaderCode    The code making up the vertex shader.
+     * @param {string}          fragmentShaderCode  The code making up the fragment shader.
+     */
+    constructor(gl, vertexShaderCode, fragmentShaderCode) {
         // Load shader.
-        this.program = initShaders(gl, vertexShaderName, fragmentShaderName); 
+        this.program = initShaders(gl, vertexShaderCode, fragmentShaderCode); 
         // Obtain attribute locations. 
         this.aPosition = gl.getAttribLocation(this.program, "aPosition");     
         this.aNormal = gl.getAttribLocation(this.program, "aNormal"); 
         this.aColor = gl.getAttribLocation(this.program, "aColor"); 
-        
         this.aUV = gl.getAttribLocation(this.program, "aUV"); 
         this.aInstanceWorldMatrix = gl.getAttribLocation(this.program, "aInstanceWorldMatrix");  
         // Determine uniform locations.
         this.uViewProjectionMatrix = gl.getUniformLocation(this.program, "uViewProjectionMatrix");
-
         this.uTextureSampler = gl.getUniformLocation(this.program, 'uTextureSampler');
         this.uTintColor = gl.getUniformLocation(this.program, 'uTintColor');
-        
         this.uIsSelected = gl.getUniformLocation(this.program, 'uIsSelected');
-
-        
         this.uTime = gl.getUniformLocation(this.program, 'uTime');
-        //gl.uniform3f(this.uTintColor, 1.0, 0.25, 0.25);
    }
 
-   matrixAttribPointer(loc, instance) {
+
+   /**
+    * Sets up a matrix attribute to receive a single value (and sets that value).
+    * 
+    * @param {WebGLContext} gl         The WebGL context.
+    * @param {number}       loc        The location of the start of the matrix attribute.
+    * @param {matrix}       instance   The instance to upload to the attribute.
+    */
+   matrixAttribPointer(gl, loc, instance) {
        var mat = flatten(transpose( instance));
         gl.vertexAttribPointer(loc  , 4, gl.FLOAT, false, 64, 0);
         gl.vertexAttribPointer(loc+1, 4, gl.FLOAT, false, 64, 16);
@@ -45,7 +56,15 @@ class Shader {
         gl.disableVertexAttribArray(loc+2);
         gl.disableVertexAttribArray(loc+3);
    }
-   matrixAttribPointerInstanced(loc) {
+
+
+    /**
+    * Sets up a matrix attribute to receive an array.
+    * 
+    * @param {WebGLContext} gl         The WebGL context.
+    * @param {number}       loc        The location of the start of the matrix attribute.
+    */
+   matrixAttribPointerInstanced(gl, loc) {
         gl.vertexAttribPointer(loc  , 4, gl.FLOAT, false, 64, 0);
         gl.vertexAttribPointer(loc+1, 4, gl.FLOAT, false, 64, 16);
         gl.vertexAttribPointer(loc+2, 4, gl.FLOAT, false, 64, 32);
@@ -62,6 +81,4 @@ class Shader {
         gl.enableVertexAttribArray(loc+2);
         gl.enableVertexAttribArray(loc+3);
     }
-
- 
 }

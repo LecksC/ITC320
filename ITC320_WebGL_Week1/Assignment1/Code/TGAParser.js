@@ -1,113 +1,97 @@
-tgaCache = {};
-//Callback function that is called once the data for the TGA is downloaded. Also takes a reference to the parser.
-//Parses and sets the texture data in WebGL
-function  parseTGAFile(binaryData,parser)
-{
-	//console.log("Loaded texture data")
-	if (!binaryData) {
-       alert("Error no TGA file data loaded: "+fileName);
-		return;
-   }
-   var binaryDataUint8Array= new Uint8Array(binaryData);
+"use strict";
+/**
+ * Contains static functions to download and parse TGA files and create WebGL textures from them.
+ * 
+ * @author 	Unknown (provided for assignment).
+ * @author  Lecks Chester
+ */
+class TGAParser {
 
-   
-   //00000000 11111111
-   //01000
-   //1123
-   //100 2
-   //1.4123132123 [11]=12 bytes
-   var width = binaryDataUint8Array[12] +(binaryDataUint8Array[13]<<8);//15 14
-   var height = binaryDataUint8Array[14] +(binaryDataUint8Array[15]<<8);//15 14
-   var pixelDepth = binaryDataUint8Array[16];//24 bits for 3 channels bgr / 32 bits for 4 channels bgra
-   var nChannels = pixelDepth/8;
-   
-   //Additionaly, reformat the  binaryDataUint8Array data to begin with the image data (offset the data by -18 bytes)
-   for (var i =0;i<width*height*nChannels;i+=nChannels )
-   {
-	   	//todo
-		//reformat the byte array from BGR data into RGB
-	   binaryDataUint8Array[i]= binaryDataUint8Array[i+18+2]; //blue
-	   binaryDataUint8Array[i+1]=binaryDataUint8Array[i+18+1]; //green
-	   binaryDataUint8Array[i+2]= binaryDataUint8Array[i+18]; //red
-   }
-   
-    //Creates a new texture within WebGL
-//	parser.texture = gl.createTexture();
-
-	//Sets the current WebGL texture to the newly created texture
-	gl.bindTexture(gl.TEXTURE_2D, parser.texture);
-
-
-
-	
-
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB,  width,height, 0,gl.RGB,gl.UNSIGNED_BYTE, binaryDataUint8Array);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST); 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); 
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); 
-	 
-	gl.generateMipmap(gl.TEXTURE_2D);
-   
-  // console.log(width,height,binaryDataUint8Array[16])
-	// console.log( binaryDataUint8Array[18],binaryDataUint8Array[19],binaryDataUint8Array[20])//bgr
-
-}
-
-function TGAParser(fileName){
-	if(tgaCache[fileName] !== undefined)
+	/**
+	 * Parses a TGA file and writes its' data to the specified texture.
+	 * 
+	 * @param {WebGLContext} 	gl 				The WebGL context.
+	 * @param {WebGLTexture} 	texture			The texture to write the decoded data to. 
+	 * @param {byte[]} 			binaryData		The raw binary data for the TGA file. 
+	 */
+	static parseTGAFile(gl, texture, binaryData)
 	{
-		this.texture = tgaCache[fileName];
-		return;
-	}
-    //Set texture reference to null
-	this.texture= gl.createTexture();
-	tgaCache[fileName] = this.texture;
-	gl.bindTexture(gl.TEXTURE_2D, this.texture);
-  
-    // Because images have to be download over the internet
-    // they might take a moment until they are ready.
-    // Until then put a single pixel in the texture so we can
-    // use it immediately. When the image has finished downloading
-    // we'll update the texture with the contents of the image.
-    const level = 0;
-    const internalFormat = gl.RGBA;
-    const width = 1;
-    const height = 1;
-    const border = 0;
-    const srcFormat = gl.RGBA;
-    const srcType = gl.UNSIGNED_BYTE;
-    const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                  width, height, border, srcFormat, srcType,
-                  pixel);	
-	//Create a HTTP request
-	var oReq;   
-	if (window.XMLHttpRequest)
-	{       
-	   oReq = new XMLHttpRequest(); 
-	}
-//return;
-	if (oReq != null)
-	{  
-	   //Set the request parser to this object
-	   oReq.parser= this;
-	   //Request the given file in asynchronous mode       
-	   oReq.open("GET", fileName, true); 
-	   //Request that the response data comes as an arraybuffer
-	   oReq.responseType = "arraybuffer";
-	   //When the response arrives call the function parseTGAFile and pass the fileData as a parameter       
-	   oReq.onreadystatechange = function()
-	   {       
-		  if (oReq.readyState == 4 && oReq.status == 200)
-		  {
-			  parseTGAFile(oReq.response,oReq.parser);           
-		  }       
+		var binaryDataUint8Array= new Uint8Array(binaryData);
+		var width = binaryDataUint8Array[12] +(binaryDataUint8Array[13]<<8);//15 14
+		var height = binaryDataUint8Array[14] +(binaryDataUint8Array[15]<<8);//15 14
+		var pixelDepth = binaryDataUint8Array[16];//24 bits for 3 channels bgr / 32 bits for 4 channels bgra
+		var nChannels = pixelDepth/8;
+		
+		// Reformat the binaryDataUint8Array data to begin with the image data (offset the data by -18 bytes)
+		for (var i =0; i < width * height * nChannels; i += nChannels)
+		{
+			binaryDataUint8Array[i]= binaryDataUint8Array[i+18+2]; //blue
+			binaryDataUint8Array[i+1]=binaryDataUint8Array[i+18+1]; //green
+			binaryDataUint8Array[i+2]= binaryDataUint8Array[i+18]; //red
 		}
-	   oReq.send();   
-	}   
-	else
-	{         
-	   window.alert("Error creating XmlHttpRequest object.");   
+	
+		// Sets the current WebGL texture to the newly created texture
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB,  width,height, 0,gl.RGB,gl.UNSIGNED_BYTE, binaryDataUint8Array);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); 
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST); 
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); 
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); 
+		gl.generateMipmap(gl.TEXTURE_2D);
+	}
+
+
+	/**
+	 * Starts a download of a TGA file and returns a reference to a placeholder for it.
+	 * 
+	 * @param {WebGLContext} 	gl 			The WebGL context.
+	 * @param {string} 			fileName 	The URL of the file to load.
+	 * 
+	 * @returns {WebGLTexture}	Reference to the placeholder that will become the requested texture, or the texture itself.
+	 */
+	static downloadTGA(gl, fileName) 
+	{
+		// Check if the tga is in the cache, and if so return it.
+		if(TGAParser.tgaCache[fileName] !== undefined)
+		{
+			return TGAParser.tgaCache[fileName];
+		}
+
+		// Create a blank blue texture and add it to the cache.
+		let texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
+					1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+					new Uint8Array([0, 0, 255, 255]));	
+		TGAParser.tgaCache[fileName] = texture;
+
+		//Create the HTTP request to download the texture.
+		var oReq;   
+		if (window.XMLHttpRequest)
+		{       
+			oReq = new XMLHttpRequest(); 
+		}
+		if (oReq !== null)
+		{  
+			oReq.parser= this;
+			oReq.open("GET", fileName, true); 
+			oReq.responseType = "arraybuffer";
+			oReq.onreadystatechange = function()
+			{       
+				if (oReq.readyState === 4 && oReq.status === 200)
+				{
+					TGAParser.parseTGAFile(gl,texture,oReq.response,oReq.parser);           
+				}       
+			};
+			oReq.send();   
+		}   
+		else
+		{         
+			window.alert("Error creating XmlHttpRequest object.");   
+		}
+
+		// Return the (currently blank/blue) texture.
+		return texture;
 	}
 }
+TGAParser.tgaCache = {};

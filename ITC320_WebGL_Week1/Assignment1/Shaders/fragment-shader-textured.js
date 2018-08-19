@@ -1,13 +1,13 @@
 "use strict";
 /**
- * Simple fragment shader that displays the colour passed in from the vertex shader.
+ * Fragment shader that displays a texture.
  * 
  * @author Lecks Chester
  */
 
 Game.GLSL.fsTextured = 
 shaderHeader +`
-varying highp vec2 vTexCoords;
+varying vec2 vTexCoords;
 uniform sampler2D uTextureSampler;
 
 void main() {

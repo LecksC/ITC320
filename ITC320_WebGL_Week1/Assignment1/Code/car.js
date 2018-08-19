@@ -1,5 +1,16 @@
+"use strict";
+/**
+ * Class to load, store, update and draw a car's properties and graphics content.
+ * 
+ * @author Lecks Chester
+ */
 class Car {
-    constructor()
+    /**
+     * Constructs a car, loads its' content and sets its' default properties.
+     * 
+     * @param {WebGLContext}    gl  The WebGL Context.
+     */
+    constructor(gl)
     {
         /**
          * The size of the area the car should drive around.
@@ -152,7 +163,7 @@ class Car {
         // Start loading the content for the car.
 
 
-        this.loadContent();
+        this.loadContent(gl);
     }
 
 
@@ -160,8 +171,9 @@ class Car {
      * Loads the mesh and texture content, and then separates the wheels and brakes 
      * into separate meshes.
      * 
+     * @param {WebGLContext}    gl  The WebGL Context.
      */
-    loadContent()
+    loadContent(gl)
     {
         const allMovingParts = [
             32, //front left brake
@@ -177,20 +189,20 @@ class Car {
             33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,
             57,59,63,64];
         let self = this;
-        this.mesh = new Mesh();
-        this.flBrakeMesh = new Mesh();
-        this.frBrakeMesh = new Mesh();
-        this.blBrakeMesh = new Mesh();
-        this.brBrakeMesh = new Mesh();
-        this.flWheelMesh = new Mesh();
-        this.frWheelMesh = new Mesh();
-        this.blWheelMesh = new Mesh();
-        this.brWheelMesh = new Mesh();
+        this.mesh = new Mesh(gl);
+        this.flBrakeMesh = new Mesh(gl);
+        this.frBrakeMesh = new Mesh(gl);
+        this.blBrakeMesh = new Mesh(gl);
+        this.brBrakeMesh = new Mesh(gl);
+        this.flWheelMesh = new Mesh(gl);
+        this.frWheelMesh = new Mesh(gl);
+        this.blWheelMesh = new Mesh(gl);
+        this.brWheelMesh = new Mesh(gl);
 
         // Download the main mesh and, in the callback for when it's done, separate the wheel
         // meshes.
-        this.mesh.DownloadObj2("car", function(mesh) {
-            self.mesh.updateBuffers();
+        this.mesh.downloadObj(gl, "car", function(mesh) {
+            self.mesh.updateBuffers(gl);
 
             // Create a mesh that references all of the data from the main mesh, 
             // but only has mesh parts for the parts of the wheels.
@@ -230,7 +242,7 @@ class Car {
             {
                 let part = self.mesh.meshParts[i];
                 if(allPaintedPartsFromRemainder.indexOf(i) >= 0)
-                    part.shader = new Shader(Game.GLSL.vsStandard, Game.GLSL.fsCarPaint);
+                    part.shader = new Shader(gl, Game.GLSL.vsStandard, Game.GLSL.fsCarPaint);
                 // This was used for working out which part was which.
                //let check = document.createElement('input');
                //check.setAttribute("type", "checkbox");
@@ -264,6 +276,7 @@ class Car {
         this.blBrakeMesh.instances = [];
         this.brBrakeMesh.instances = [];
     }
+
 
     /**
      * Updates the vehicle, handling "AI", movement and physics.
@@ -352,12 +365,13 @@ class Car {
         this.updateWheel(this.brWheelMesh, deltaTime, baseMatrix,0);
     }
 
+
     /**
      * Updates the wheel rotation and turn angle relative to the car, and adds wheel world matrix instance.
      * 
      * @param {Mesh}    wheel           The wheel to update.
      * @param {float}   deltaTime       The time passed since the last update (used to rotate the wheel, use 0 for brakes).
-     * @param {mat4}    baseMatrix      The transform matrix for the base of the car (including slide, excluding tilt).
+     * @param {matrix}    baseMatrix      The transform matrix for the base of the car (including slide, excluding tilt).
      * @param {float}   turnAngle       The clamped angle that the wheel is turning relative to the car.
      */
     updateWheel(wheel, deltaTime, baseMatrix, turnAngle)
@@ -368,22 +382,24 @@ class Car {
         wheel.addInstance(mult(baseMatrix,mult(translate(wheel.bounds.center), mult(rotation, translate(scale(-1,wheel.bounds.center))))));
     }
 
+    
     /**
      * Draw all of the car meshes. Should only be called once per frame (not once per vehicle).
      * 
-     * @param {Camera}  camera  The camera to use to draw the meshes.
-     * @param {float}   time    The current time used to colour the car.
+     * @param {WebGLContext}    gl      The WebGL Context.
+     * @param {Camera}          camera  The camera to use to draw the meshes.
+     * @param {float}           time    The current time used to colour the car.
      */
-    draw(camera, time)
+    draw(gl, camera, time)
     {
-        this.mesh.draw(camera, time);
-        this.flBrakeMesh.draw(camera);
-        this.frBrakeMesh.draw(camera);
-        this.flWheelMesh.draw(camera);
-        this.frWheelMesh.draw(camera);
-        this.blWheelMesh.draw(camera);
-        this.brWheelMesh.draw(camera);
-        this.blBrakeMesh.draw(camera);
-        this.brBrakeMesh.draw(camera);
+        this.mesh.draw(gl, camera, time);
+        this.flBrakeMesh.draw(gl, camera);
+        this.frBrakeMesh.draw(gl, camera);
+        this.flWheelMesh.draw(gl, camera);
+        this.frWheelMesh.draw(gl, camera);
+        this.blWheelMesh.draw(gl, camera);
+        this.brWheelMesh.draw(gl, camera);
+        this.blBrakeMesh.draw(gl, camera);
+        this.brBrakeMesh.draw(gl, camera);
     }
 }

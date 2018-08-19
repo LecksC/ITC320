@@ -4,9 +4,14 @@
  * 
  * @author  Lecks Chester
  */
-class orbitCamera {
+class OrbitCamera {
+    /**
+     * Initializes the camera and sets default values.
+     * 
+     */
     constructor() {
         this.name = "Orbit Camera";
+        this.instructions = "Click and drag to look around.";
         // The height above the ground.
         this.distance = 10;
         this.height = 4;
@@ -23,7 +28,7 @@ class orbitCamera {
         this.near = 0.5;
         this.far = 1000;
         this.fieldOfViewY = 70;
-        this.aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        this.aspect = 1;
         // variables to store the matrices in.
         this.projection = null;
         this.view = null;
@@ -46,46 +51,29 @@ class orbitCamera {
     /**
      * Runs every frame to perform any time-based updates on the camera.
      * 
-     * Currently just handles camera height from the ground.
-     * 
      * @param   {float} deltaTime   the time since the last update in seconds.
      */
     update(deltaTime) {
         if(this.target === null)
             return;
+        // Move the camera to the new target position.
         this.at = this.target.position; 
         this.eye = add(this.target.position, rotateAroundAxis(vec3(-this.distance, this.height, 0), vec3(0, 1, 0), this.rotationX));
-
-        // Find the destination height.
-      // var destHeight = 0;
-      // for (var i = 0; i < heightShapes.length; i++) {
-      //     if (isInConvexPolygon(this.position, heightShapes[i])) {
-      //         destHeight = Math.max(destHeight, heightShapes[i][0][1]);
-      //     }
-      // }
-        // Interpolate towards the destination height over time. Gives a smoother
-        // effect than jumping straight to the height.
-      //  this.position[1] = lerp(this.position[1],destHeight+ this.personHeight, deltaTime*5);
     }
 
 
     /**
-     * Moves the camera the specified distance on the forward/backward and left/right
-     * axis relative to the viewing direction.
-     * 
+     * Does nothing on this camera.
      * 
      * @param   {float} forward     the distance to move forward (negative for backwards).
      * @param   {float} right   the distance to move right (negative for left).
      */
     move(forward, right) {
-      // var fwdvec = rotateAroundAxis(vec3(0, 0, 1), vec3(0, 1, 0), this.rotationX);
-      // var rightvec = rotateAroundAxis(vec3(-1, 0, 0), vec3(0, 1, 0), this.rotationX);
-      // this.position = add(this.position, scale(forward, fwdvec));
-      // this.position = add(this.position, scale(right, rightvec));
+
     }
 
     /**
-     * Rotates the camera the specified number of degrees left/right and up/down.
+     * Rotates the camera the specified number of degrees left/right. Up/down is ignored on this camera.
      * 
      * @param {float} right     the number of degrees to rotate the camera right (negative for left).
      * @param {float} up        the number of degrees to rotate the camera up (negative for down).
