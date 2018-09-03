@@ -18,39 +18,29 @@ window.onload = function init()
     //  Initialize our data for the Triangle
     //
 
-    var bodyTexture = loadTexture("textures/Body.png");
-    var headTexture = loadTexture("textures/Head.png");
+    var texture = loadTexture("textures/Farmhouse TextureAlphaChannel.png");
+    //var texture = loadTexture("textures/Farmhouse TextureColourMask.png");
+    camera = new firstPersonCamera();
+
     mesh = new Mesh();
     mesh.addInstance(translate([0,0,0]));
-    mesh.DownloadObj("meshes/Male.obj", function(m) {     
+    mesh.DownloadObj("meshes/H1.obj", function(m) {     
         for(var i = 0; i < m.meshParts.length; i++)
         {
-  
-            if(m.meshParts[i].name === "body")
-            {
-                m.meshParts[i].mainTexture = bodyTexture; 
-                m.meshParts[i].shader = new Shader(vertexShaderGLSL, fragmentShaderGLSL_Male);
-                gl.useProgram( m.meshParts[i].shader.program );
-                gl.uniform3f(m.meshParts[i].shader.uTintColor, 0.5, 0.25, 0.25);
-
-            }
-            if(m.meshParts[i].name === "detil")
-            {
-            m.meshParts[i].mainTexture = headTexture; 
-            }
+            m.meshParts[i].mainTexture = texture; 
+	        camera.zoomTo([0,0,0], m.bounds);
         }});
 
     // First, initialize the corners of our triangle with three points.
-    camera = new firstPersonCamera();
-	
+
     //
     //  Configure WebGL
     //
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
     gl.enable(gl.BLEND);
-
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.GL_SAMPLE_ALPHA_TO_COVERAGE);
     ////  Load shaders and initialize attribute buffers
     //var program = initShaders( gl, vBasicShaderCode,
     //                           fBasicShaderCode );
@@ -102,26 +92,25 @@ function render(time)
 	
     handleTiming(time);
     handleInput();
-  //  gl.uniform1f(timeLocation, time*0.005);
-    var z = 0;
     camera.update(time);
+
+    // Draw in 2 layers for alpha blending.
+    //if(mesh.bounds !== null)
+    //{
+    //    camera.far= 1500;
+    //    camera.near = length(subtract(camera.position, mesh.bounds.center));
+    //    camera.updateMatrices();
+    //    mesh.draw(camera);
+    //    camera.near = 0.5;
+    //    camera.far= length(subtract(camera.position, mesh.bounds.center));
+    //    gl.clear( gl.DEPTH_BUFFER_BIT );
+    //}
+
     camera.updateMatrices();
     mesh.draw(camera);
-//	for (var x =-5;x<5;x++)   
-//    for (var y =-5;y<5;y++)   
-//    {
-//
-//     //Change the transformation
-//	 worldMatrix = mult(translate(0.5*x, 0.5*y, 0.5*z), rotateScaleMatrix);
-//     //Push the new transformation to the shader
-//     gl.uniformMatrix4fv(worldMatrixLocation, gl.FALSE, flatten(worldMatrix));
-//     //Draw cube
-//     gl.drawArrays( gl.TRIANGLES, 0, 36 ); //Draw a single triangle (36 points)
-//    }
-	
+
 	
     this.requestAnimationFrame(render);
-    
 }
 
 

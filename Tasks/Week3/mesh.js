@@ -292,7 +292,7 @@ class Mesh {
     }
 
     // based on https://stackoverflow.com/questions/8567114/how-to-make-an-ajax-call-without-jquery
-    DownloadObj(filename)
+    DownloadObj(filename, then)
     {
         var xmlhttp = new XMLHttpRequest();
         var self = this;
@@ -300,6 +300,10 @@ class Mesh {
             if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
                if (xmlhttp.status === 200) {
                    self.LoadObj(xmlhttp.responseText);
+                   if(then !== undefined)
+                   {
+                       then(self);
+                   }
                }
                else if (xmlhttp.status === 400) {
                   alert('There was an error 400');
@@ -313,9 +317,25 @@ class Mesh {
         xmlhttp.open("GET", filename, true);
         xmlhttp.send();
     }
+
+    /**
+     * Calculates the bounds for the mesh based on its' current mesh parts.
+     * 
+     */
+    calculateBounds()
+    {
+        this.bounds = new BoundingBox();
+        for(let p = 0; p < this.meshParts.length; p++)
+        {
+            for(let i = this.meshParts[p].offset; i < this.meshParts[p].offset + this.meshParts[p].count; i++)
+            {
+                this.bounds.addPoint(this.points[i]);
+            }
+        }
+    }
+
     LoadObj(str)
     {
-        console.log(str);
         //from https://stackoverflow.com/questions/35254086/how-to-split-a-string-on-line-spaces-breaks-in-javascript
         var lines = str.split(/(\r\n|\n|\r)/gm);
         var currentMaterial = "no material";
@@ -338,7 +358,7 @@ class Mesh {
                 {
                     
                     var firstword = line.substring(0, firstwordlength);
-                    var restOfLine = line.substring(firstwordlength, line.length - firstwordlength).trim();
+                    var restOfLine = line.substring(firstwordlength, line.length).trim();
                     switch(firstword.toLowerCase())
                     {
                         case "o":
@@ -446,11 +466,9 @@ class Mesh {
                 
             }
             this.meshParts.push(new MeshPart(offset, vertCount));
-            console.log(partname);
         }
-    console.log(this.points);
-    console.log(this.indexs);
-    this.buffersUpdated =false;
+        this.buffersUpdated =false;
+        this.calculateBounds();
     }
     // index = 0 1 or 2 for which vertex in the triangle.
     // indexType = 0 for pos, 1 for tex coord, 2 for normal

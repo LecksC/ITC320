@@ -228,3 +228,48 @@ function testPack2Floats() {
 function isPowerOf2(value) {
     return (value & (value - 1)) == 0;
 }
+
+/**
+ * Gets the minimum of each (x,y,z) component from the 2 objects.
+ * 
+ * Vectors must be the same size.
+ * 
+ * @param {float[]} a The first vector.
+ * @param {float[]} b The second vector.
+ * 
+ * @returns {float[]}  The minimum values.
+ */
+function componentMin(a, b) {
+    if(a.length !== b.length) {
+        throw new DOMException("Vectors are not the same length.");
+    }
+    let ret = [];
+    for(let i = 0; i < a.length; i++)
+    {
+        ret.push(Math.min(a[i], b[i]));
+    }
+    return ret;
+}
+
+
+/**
+ * Gets the maximum of each (x,y,z) component from the 2 objects.
+ * 
+ * Vectors must be the same size.
+ * 
+ * @param {float[]} a The first vector.
+ * @param {float[]} b The second vector.
+ * 
+ * @returns {float[]}  The maximum values.
+ */
+function componentMax(a, b) {
+    if(a.length !== b.length) {
+        throw new DOMException("Vectors are not the same length.");
+    }
+    let ret = [];
+    for(let i = 0; i < a.length; i++)
+    {
+        ret.push(Math.max(a[i], b[i]));
+    }
+    return ret;
+}

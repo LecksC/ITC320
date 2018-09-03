@@ -4,7 +4,6 @@ var points;
 var colours;
 var worldMatrix;
 var worldMatrixLocation;
-var timeLocation;
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -125,7 +124,7 @@ window.onload = function init()
     //  Configure WebGL
     //
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
     
     //  Load shaders and initialize attribute buffers
     var program = initShaders( gl, vBasicShaderCode,
@@ -153,17 +152,17 @@ window.onload = function init()
     gl.enableVertexAttribArray( vCol ); */
 	
 	// set uniform worldMatrix
-	worldMatrixLocation = gl.getUniformLocation(program, "umWorldMatrix");
-	viewMatrixLocation = gl.getUniformLocation(program, "umViewMatrix");
-	projMatrixLocation = gl.getUniformLocation(program, "umProjMatrix");
-	timeLocation = gl.getUniformLocation(program, "uTime");
-	viewMatrix = lookAt([0, 0, -10], [0, 0, 10], [0, 1, 0]);
-	projMatrix = perspective(45, 512.0/512.0, 0.1, 10000.0);
+	worldMatrixLocation = gl.getUniformLocation(program, "uWorldMatrix");
+	viewMatrixLocation = gl.getUniformLocation(program, "uViewMatrix");
+	projMatrixLocation = gl.getUniformLocation(program, "uProjMatrix");
+	viewMatrix = lookAt([-.25, -.25, -10], [-.25, -.25, 10], [0, 1, 0]);
+    projMatrix = perspective(45, 512.0/512.0, 0.1, 10000.0);
+    var flatProj = flatten(projMatrix);
 	gl.uniformMatrix4fv(viewMatrixLocation, gl.FALSE, flatten(viewMatrix));
-	gl.uniformMatrix4fv(projMatrixLocation, gl.FALSE, flatten(projMatrix));
+	gl.uniformMatrix4fv(projMatrixLocation, gl.FALSE, flatProj);
 	
 	
-	rotateScaleMatrix = mult(rotate(90, [0, 1, 1]), scalem(0.1, 0.1, 2.0));
+	rotateScaleMatrix = mult(rotate(0, [0, 1, 1]), scalem(0.1, 0.1, 0.1));
 	
 	gl.enable(gl.DEPTH_TEST);
 	
@@ -176,11 +175,9 @@ function render(time)
 {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 	
-	
-    gl.uniform1f(timeLocation, time*0.005);
-	var z = 0;
 	for (var x =-5;x<5;x++)   
-    for (var y =-5;y<5;y++)   
+    for (var y =-5;y<5;y++) 
+    for (var z =-5;z<5;z++)   
     {
 
      //Change the transformation
@@ -190,8 +187,4 @@ function render(time)
      //Draw cube
      gl.drawArrays( gl.TRIANGLES, 0, 36 ); //Draw a single triangle (36 points)
     }
-	
-	
-    this.requestAnimationFrame(render);
-    
 }

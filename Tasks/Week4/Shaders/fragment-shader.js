@@ -22,10 +22,13 @@ void main() {
 		discard;
 	}
 
+	//alpha masking to help with depth buffer issues:
+	if(color.a < 1.0) {
+		discard;
+	}
+	color.a = 1.0;
 	gl_FragColor = color;
 
-	//alpha blending
-	//gl_FragColor = texture2D(uTextureSampler, vTexCoords);
 }
 `;
 script.innerHTML = fragmentShaderGLSL;

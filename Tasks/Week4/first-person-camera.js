@@ -110,4 +110,16 @@ class firstPersonCamera {
         fwd = rotateAroundAxis(fwd, vec3(0, 1, 0), this.rotationX);
         return fwd;
     }
+
+    zoomTo(pos, bounds)
+    {
+        var distx = Math.max(Math.abs(bounds.max[0] / Math.tan(this.fieldOfViewY*this.aspect/2)), Math.abs(bounds.min[0] / Math.tan(this.fieldOfViewY*this.aspect/2)));
+        var disty = Math.max(Math.abs(bounds.max[1] / Math.tan(this.fieldOfViewY/2)), Math.abs(bounds.min[1] / Math.tan(this.fieldOfViewY/2)));
+        var distz = Math.max(Math.abs(bounds.max[2] / Math.tan(this.fieldOfViewY*this.aspect/2)), Math.abs(bounds.min[2] /Math.tan(this.fieldOfViewY*this.aspect/2)));
+        var dist = Math.max(distx, disty, distz);
+        dist += Math.max(bounds.size[0], bounds.size[1], bounds.size[2]);
+        this.rotationX = 90;
+        this.rotationY = 0;
+        this.position = vec3(-dist, this.personHeight, 0);
+    }
 }
