@@ -22,6 +22,21 @@ function angleBetween(base, v1, v2) {
     return Math.atan2(length(cross(a,b)), dot(a,b));
 }
 
+/**
+
+ * @param {vec3} v1 the first point.
+ * @param {vec3} v2 the second point.
+ * 
+ * @returns {float} The angle.
+ */
+function signedAngle2D(v1, v2) {
+    let angle = Math.atan2(length(cross(v1,v2)), dot(v1,v2));
+    if(v1[0]*v2[2] - v1[2]*v2[0] > 0)
+        angle = -angle;
+    return angle;
+}
+
+
 
 /**
  * Rotate a point or normal around the origin on the specified axis.
@@ -104,17 +119,14 @@ function componentMax(a, b) {
  * @returns {vec3}  The euler angles in degrees.
  */
 function eulerFromUnitVector(unit) {
-
-    unit = normalize(unit);
-
     let rise = unit[1];
-    let run = 1-Math.abs(unit);
+    let run = Math.sqrt(unit[0]*unit[0] + unit[2]*unit[2]);
     let slope = 0;
     if(run > 0)
         slope = Math.atan(rise/run);
     let unit2d = vec3(unit[0], 0, unit[2]);
 
-    let angle2d = angleBetween(vec3(1,0,0), unit2d);
+    let angle2d = signedAngle2D(vec3(0,0,1), unit2d);
 
-    return vec3(slope * RADIANS_TO_DEGREES, angle2d * RADIANS_TO_DEGREES, 0);
+    return vec3(slope * RADIANS_TO_DEGREES,angle2d * RADIANS_TO_DEGREES, 0);
 }

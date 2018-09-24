@@ -108,6 +108,7 @@ class Game {
          * @type     {vec3}
          */
         this.input = {
+            mouseSensitivity: 0.1,
             forwardPressed: false,
             backPressed: false,
             leftPressed: false,
@@ -117,7 +118,9 @@ class Game {
             mouseLookCurrentPosition: null
         };
 
-        this.projectileTypes = new this.projectileTypes();
+
+        this.projectileTypes = { };
+        this.projectiles = [];
 
         this.init();
     }
@@ -154,12 +157,12 @@ class Game {
      */
     initCameras()
     {
-        var orbit = new OrbitCamera();
-        orbit.target = this.car;
-        var chase = new ChaseCamera();
-        chase.target = this.car;
-        this.cameras.push(orbit);
-        this.cameras.push(chase);
+        //var orbit = new OrbitCamera();
+        //orbit.target = this.car;
+        //var chase = new ChaseCamera();
+        //chase.target = this.car;
+        //this.cameras.push(orbit);
+        //this.cameras.push(chase);
         this.cameras.push(new FirstPersonCamera());
         document.getElementById('instructions').innerHTML = this.cameras[this.cameraIndex].instructions;
     }
@@ -172,6 +175,29 @@ class Game {
     initScene()
     {
         let self = this;
+        // Initialize projectile mesh.
+        let defaultprojectilemesh = new Mesh(this.gl);
+        let shapePoints = [vec3(0.0, 0.00001, 0)];
+        let bulletLength = 0.05;
+        let curveLength = bulletLength*0.5;
+        let bulletCurvePointCount = 10;
+        let bulletWidth = 0.01;
+        let bulletColor = vec3(0.5, 0.5, 0.0);
+        for (let i = 0; i < bulletCurvePointCount; i++)
+        {
+            let perc = i/bulletCurvePointCount;
+            let y = perc * -curveLength;
+            let z = Math.sin(perc * (Math.PI/2)) * bulletWidth;
+            shapePoints.push(vec3(y,z, 0));
+        }
+        shapePoints.push(vec3(-bulletLength, bulletWidth, 0));
+        shapePoints.push(vec3(-bulletLength, 0.00001, 0));
+
+        defaultprojectilemesh.addLathe(this.gl, shapePoints, [], bulletColor, vec3(0,0,1), vec3(0,1,0), 0, 10, false);
+
+        this.projectileTypes.default= new ProjectileType(defaultprojectilemesh, 10, 10);
+
+
         // Initialize car.
         this.car = new Car(this.gl);
         
@@ -302,14 +328,27 @@ class Game {
     render(frameTime)
     {
         this.gl.clear( this.gl.COLOR_BUFFER_BIT |this.gl.DEPTH_BUFFER_BIT );
+        
         this.handleTiming(frameTime);
         this.handleInput();
         this.car.resetInstances();
+        for(let key in this.projectileTypes)
+        {
+            this.projectileTypes[key].mesh.resetInstances();
+        }
+        for(let i = 0; i < this.projectiles.length; i++)
+        {
+            this.projectiles[i].update(this.timing.deltaTime);
+        }
         this.car.update(this.timing.deltaTime);
         let camera = this.cameras[this.cameraIndex];
         camera.update(this.timing.deltaTime);
         camera.updateMatrices();
         
+        for(let key in this.projectileTypes)
+        {
+            this.projectileTypes[key].mesh.draw(this.gl, camera, this.timing.currentTime);
+        }
         this.car.draw(this.gl, camera, this.timing.currentTime);
         this.h1.draw(this.gl, camera);
         this.h2.draw(this.gl, camera);
@@ -423,6 +462,7 @@ class Game {
         this.canvas.onmousedown = function(e) {
             self.input.mouseLookStartPosition = vec2(e.clientX, e.clientY);
             self.input.mouseLookPressed = true;
+            self.fireProjectile();
         };
         this.canvas.onmouseup =  function(e) {
             self.input.mouseLookPressed = false;
@@ -501,7 +541,10 @@ class Game {
     }
 
     updateMousePosition(e) {
-        this.input.mouseLookStartPosition = add(this.input.mouseLookStartPosition, vec2(-e.movementX, -e.movementY));
+        this.input.mouseLookStartPosition = add(
+            this.input.mouseLookStartPosition, 
+            vec2(-e.movementX*this.input.mouseSensitivity, -e.movementY*this.input.mouseSensitivity)
+        );
     }
 
     get isPointerLocked()
@@ -530,7 +573,13 @@ class Game {
 
     fireProjectile()
     {
-        let projectile = new Projectile()
+        let projectile = new Projectile(this.camera.position, this.camera.forwardVector, this.projectileTypes.default);
+        this.projectiles.push(projectile);
+    }
+
+    get camera()
+    {
+        return this.cameras[this.cameraIndex];
     }
 }
 /**

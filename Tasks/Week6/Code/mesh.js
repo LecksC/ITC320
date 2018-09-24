@@ -153,7 +153,7 @@ class Mesh {
 
                 // Tell the shader we bound the texture to texture unit 0
                 gl.uniform1i(part.shader.uTextureSampler, 0);
-            } else { continue; }
+            }
             gl.uniformMatrix4fv(part.shader.uViewProjectionMatrix, false, flatten(camera.viewProjection));
 
             gl.uniform1f(part.shader.uTime, time || 0);
@@ -264,7 +264,12 @@ class Mesh {
      * @param {vec3}    scale       The scale of the instance. 
      */
     addInstanceFromVectors(position, rotation, scale) {
-        this.instances.push(mult(position, mult(rotate(rotation), scalem(scale,scale,scale))));
+        
+
+        let rot = rotate(rotation[2], vec3(0,0,1));
+        rot = mult(rotate(rotation[0], vec3(1,0,0)), rot);
+        rot = mult(rotate(rotation[1], vec3(0,1,0)), rot);
+        this.instances.push(mult(translate(position), mult(rot, scalem(scale))));
         this.instancesUpdated = false;
     }
 
@@ -275,6 +280,7 @@ class Mesh {
     resetInstances()
     {
         this.instances = [];
+        this.instancesUpdated = false;
     }
 
     /**
@@ -500,6 +506,80 @@ class Mesh {
             }   
         }
     }
+
+        /**
+     * Adds a 3D circular shape from the given 2d polygon cross section to the mesh.
+     * 
+     * @param {vec2[]}  shapePoints         the 2d polygon that make up the cross section of the shape to lathe.
+     * @param {vec3[]}  shapeNormals        the corner normals relative to the shape.
+     * @param {vec3}    shapeColor          the color to set for vertices.
+     * @param {vec3}    axisNormal          the axis to rotate around.
+     * @param {vec3}    axisUp              the axis to treat as up (y in the shape).
+     * @param {float}   radius              the radius to extend the lathe shape outwards.
+     * @param {int}     sliceCount          the number of slices to create in the lathe.
+     * @param {boolean} mirror              whether or not to mirror the points on the x axis.
+     */
+    addLathe(gl, shapePoints, shapeNormals, shapeColor, axisNormal, axisUp, radius, sliceCount, mirror) {
+        this.buffersUpdated = false;
+        if (mirror) {
+            shapePoints = shapePoints.slice(0);
+            shapeNormals = shapeNormals.slice(0);
+            for (let i = shapePoints.length - 1; i >= 0; i--) {
+                if ((i == 0 || shapePoints.length - 1) && shapePoints[i].x == 0) {
+                    continue;
+                }
+                shapePoints.push(vec3(-shapePoints[i][0], shapePoints[i][1]));
+                shapeNormals.push(vec3(-shapeNormals[i][0], shapeNormals[i][1]));
+            }
+            shapePoints.push(vec3(shapePoints[0][0], shapePoints[0][1]));
+            shapeNormals.push(vec3(shapeNormals[0][0], shapeNormals[0][1]));
+        }
+        var startindex = this.points.length;
+        for (let i = 0; i < shapePoints.length; i++) {
+            let point = shapePoints[i];
+            let normal = shapeNormals[i];
+            let color = shapeColor;
+            if (normal == null) {
+                normal = vec3(0, 1, 0);
+            }
+            if (color == null) {
+                color = vec3(1, 0, 1);
+            }
+            let pointToRotate = add(scale(point[0], axisNormal), scale(point[1] + radius, axisUp));
+            let normalToRotate = add(scale(normal[0], axisNormal), scale(normal[1], axisUp));
+            for (let s = 0; s < sliceCount; s++) {
+                let degrees = (s / (sliceCount - 1)) * 360;
+                if (s < (sliceCount - 1)) {
+                    this.points.push(rotateAroundAxis(pointToRotate, axisNormal, degrees));
+                    this.normals.push(rotateAroundAxis(normalToRotate, axisNormal, degrees));
+                    this.colors.push(color);
+                }
+                if (s > 0 && i > 0) {
+                    if (s < (sliceCount - 1)) {
+                        this.indexs.push(startindex + i * (sliceCount - 1) + s);
+                        this.indexs.push(startindex + i * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + i * (sliceCount - 1) + s);
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1) + s);
+                    }
+                    else {
+                        this.indexs.push(startindex + i * (sliceCount - 1));
+                        this.indexs.push(startindex + i * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + i * (sliceCount - 1));
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1) + s - 1);
+                        this.indexs.push(startindex + (i - 1) * (sliceCount - 1));
+                    }
+                }
+            }
+        }
+        let mp = new MeshPart(gl, "lathe", 0, this.indexs.length);
+        mp.shader = new Shader(gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
+        this.meshParts.push(mp);
+        this.buffersUpdated = false;
+    }
+
 }
 
 

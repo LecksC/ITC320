@@ -33,7 +33,7 @@ class Projectile {
          * 
          * @type {vec3}
          */
-        this.velocity = direction * type.startSpeed;
+        this.velocity = scale(type.startSpeed, direction);
 
         this.type = type;
     }
@@ -46,7 +46,7 @@ class Projectile {
      */
     update(deltaTime)
     {
-        this.position = add(this.position, this.velocity);
+        this.position = add(this.position, scale(deltaTime, this.velocity));
         this.type.mesh.addInstanceFromVectors(this.position, eulerFromUnitVector(this.forwards), vec3(1.0,1.0,1.0));
     }
 

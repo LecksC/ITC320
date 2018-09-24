@@ -102,4 +102,13 @@ class OrbitCamera {
         fwd = rotateAroundAxis(fwd, vec3(0, 1, 0), this.rotationX);
         return fwd;
     }
+
+    /**
+     * Gets the position the camra
+     * 
+     * @returns {vec3}  the position of the camera in world space.
+     */
+    get position() {
+        return this.eye;
+    }
 }
