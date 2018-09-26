@@ -124,7 +124,7 @@ class Game {
         this.projectiles = [];
 
         this.meshes = [];
-
+        this.drawables = [];
         this.init();
     }
 
@@ -178,8 +178,18 @@ class Game {
     initScene()
     {
         let self = this;
+        // Initialize the animated rectangle.
+        let rectangle = new Mesh(this.gl);
+        let rectangleTexture = TGAParser.downloadTGA(this.gl, "Assets/textures/AnimatedRectangle.tga");
+        rectangle.addInstanceFromVectors(vec3(0,0,0), vec3(-90,25,0), vec3(1,1,1));
+        rectangle.downloadCollada(this.gl, "AnimatedRectanglev2",function(mesh) {
+            rectangle.meshParts[0].mainTexture = rectangleTexture;
+         });
+        this.animatedBox = rectangle;
+        this.drawables.push(rectangle);
         // Initialize projectile mesh.
         let defaultprojectilemesh = new Mesh(this.gl);
+        this.drawables.push(defaultprojectilemesh);
         let shapePoints = [vec3(0.0, 0.00001, 0)];
         let bulletLength = 0.5;
         let curveLength = bulletLength*0.5;
@@ -201,6 +211,7 @@ class Game {
         this.projectileTypes.default= new ProjectileType(defaultprojectilemesh, 10, 10);
 
         this.box = new Mesh(this.gl);
+        this.drawables.push(this.box);
         this.box.addBox(this.gl, vec3(1,1,1), vec3(0,.5,0));
         this.box.addInstanceFromVectors(vec3(5,0,5), vec3(0,25,0), vec3(1,1,1));
         this.box.addInstanceFromVectors(vec3(13,0,5), vec3(0,76,0), vec3(1.8,9,6));
@@ -214,8 +225,12 @@ class Game {
         this.meshes.push(this.box);
         // Initialize car.
         this.car = new Car(this.gl);
+        
+        this.drawables.push(this.car);
         // Initialize buildings.
         this.h1 = new Mesh(this.gl);
+        
+        this.drawables.push(this.h1);
         let h1scale = 0.3;
         let h2scale = 5.0;
         let h3scale = 25.0;
@@ -262,8 +277,10 @@ class Game {
         );
         this.meshes.push(this.h1);
         
+
         // Create layers of 'H2' buildings covering 3 sides.
         this.h2 = new Mesh(this.gl);
+        this.drawables.push(this.h2);
         this.h2.downloadObj(this.gl, "H2", 
             function(mesh) {
                 let height = -mesh.bounds.min[1];
@@ -323,6 +340,7 @@ class Game {
                 }
             });
         this.meshes.push(this.h3);
+        this.drawables.push(this.h3);
 
         // Initialize floor.
         this.floor = new Mesh(this.gl);
@@ -332,6 +350,7 @@ class Game {
                 mesh.meshParts[0].shader = new Shader(self.gl, Game.GLSL.vsStandard, Game.GLSL.fsGround);
             });
         this.meshes.push(this.floor);
+        this.drawables.push(this.floor);
         
     }
 
@@ -344,9 +363,12 @@ class Game {
     render(frameTime)
     {
         this.gl.clear( this.gl.COLOR_BUFFER_BIT |this.gl.DEPTH_BUFFER_BIT );
-        
+
+
         this.handleTiming(frameTime);
         this.handleInput();
+        this.animatedBox.updateSkeleton(Math.floor(this.timing.currentTime*10));
+        this.animatedBox.updateVertices();
         this.car.resetInstances();
         for(let key in this.projectileTypes)
         {
@@ -361,16 +383,10 @@ class Game {
         camera.update(this.timing.deltaTime);
         camera.updateMatrices();
         
-        for(let key in this.projectileTypes)
+        for(let i = 0; i < this.drawables.length; i++)
         {
-            this.projectileTypes[key].mesh.draw(this.gl, camera, this.timing.currentTime);
+            this.drawables[i].draw(this.gl, camera, this.timing.currentTime);
         }
-        this.car.draw(this.gl, camera, this.timing.currentTime);
-        this.h1.draw(this.gl, camera);
-        this.h2.draw(this.gl, camera);
-        this.h3.draw(this.gl, camera);
-        this.floor.draw(this.gl, camera);
-        this.box.draw(this.gl, camera);
         requestAnimationFrame(this.render.bind(this));
     }
 

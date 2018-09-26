@@ -398,7 +398,35 @@ class Mesh {
         xmlhttp.send();
         
     }
-
+    /**
+     * Begins the download of an OBJ file.
+     * 
+     * @param {WebGLContext}    gl          The WebGL Context.
+     * @param {string}          fileName    The file name (excluding folder/extension) of the OBJ file to load.
+     * @param {function(mesh)}  then        Callback to run when the mesh and materials have loaded.
+     */
+    downloadCollada(gl, fileName, then)
+    {
+        var xmlhttp = new XMLHttpRequest();
+        var self = this;
+        xmlhttp.onreadystatechange = function() {
+            if (xmlhttp.readyState === XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+               if (xmlhttp.status === 200) {
+                   self.loadCollada(gl, xmlhttp.responseText, then);
+                }
+               else if (xmlhttp.status === 400) {
+                  alert('There was an error 400');
+               }
+               else {
+                   alert('something else other than 200 was returned');
+               }
+            }
+        };
+    
+        xmlhttp.open("GET", "Assets/meshes/" + fileName + ".dae", true);
+        xmlhttp.send();
+        
+    }
 
     /**
      * Parses a OBJ file into this mesh.
@@ -733,6 +761,101 @@ class Mesh {
         this.indexs.push(start + 1);
         this.indexs.push(start + 3);
         this.indexs.push(start + 2);
+    }
+
+    loadCollada(gl, data, then)
+    {
+        let collada = new ColladaParser(data);
+        this.boneWeights = [];
+        this.boneIndexs = [];
+        this.bindPoints = [];
+        this.boneCounts = collada.vertexNumBonesDataRead;
+        for(let i = 0; i < collada.vertexBoneIndexDataRead.length/4; i++)
+        {
+            this.boneIndexs.push([
+                collada.vertexBoneIndexDataRead[i*4+0],
+                collada.vertexBoneIndexDataRead[i*4+1],
+                collada.vertexBoneIndexDataRead[i*4+2],
+                collada.vertexBoneIndexDataRead[i*4+3]
+            ]);
+            this.boneWeights.push([
+                collada.vertexBoneWeightDataRead[i*4+0],
+                collada.vertexBoneWeightDataRead[i*4+0],
+                collada.vertexBoneWeightDataRead[i*4+0],
+                collada.vertexBoneWeightDataRead[i*4+0]
+            ]);
+        }
+        for(let i = 0; i < collada.vertexPositionDataRead.length/3; i++)
+        {
+            this.points.push(vec3(collada.vertexPositionDataRead[i*3+0],collada.vertexPositionDataRead[i*3+1],collada.vertexPositionDataRead[i*3+2]));
+            this.normals.push(vec3(collada.vertexNormalDataRead[i*3+0],collada.vertexNormalDataRead[i*3+1],collada.vertexNormalDataRead[i*3+2]));
+            this.bindPoints.push(vec3(collada.vertexPositionDataRead[i*3+0],collada.vertexPositionDataRead[i*3+1],collada.vertexPositionDataRead[i*3+2]));
+        }
+        for(let i = 0; i < collada.vertexTextureDataRead.length/2; i++){
+            this.uvs.push(vec2(collada.vertexTextureDataRead[i*2+0],collada.vertexTextureDataRead[i*2+1]));
+        }
+        for(let i = 0; i < collada.vertexIndexes.length; i++)
+        {
+            this.indexs.push(i);
+        }
+        let mp = new MeshPart(gl, "skinnedmesh", 0, this.indexs.length);
+        //mp.shader = new Shader(gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
+        this.meshParts.push(mp);
+        this.buffersUpdated = false;
+        this.calculateBounds();
+        this.bones = collada.bones;
+        this.updateSkeleton(5);
+        this.updateVertices();
+        if(then !== undefined)
+        {
+           then(this);
+        }
+    }
+    updateSkeleton(frame)
+    {
+        if(this.bones)
+            this.updateBone(this.bones[0], frame);
+    }
+    updateBone(bone, frame)
+    {
+        let jointMatrix; 
+        let IBM = bone.inverseBindMatrix;
+        let frameCount = bone.animationTracks[1].keyFrameTransform.length;
+        if(frameCount > 0)
+        {
+            jointMatrix = bone.animationTracks[1].keyFrameTransform[frame%frameCount];
+        } else {
+            jointMatrix = bone.bindPoseMatrix;
+        }
+        if(bone.parent !== null)
+        {
+            jointMatrix = mult(bone.parent.jointMatrix, jointMatrix);
+        }
+        let SM = mult(jointMatrix, IBM);
+        bone.jointMatrix = jointMatrix;
+        bone.skinningMatrix = SM;
+        for(let i = 0; i < bone.children.length; i++)
+        {
+            this.updateBone(bone.children[i], frame);
+        }
+    }
+    updateVertices()
+    {
+        for(let i = 0; i < this.points.length; i++)
+        {
+            let finalVertex = vec4(0,0,0,1);
+            for(let t = 0; t < this.boneCounts[i]; t++)
+            {
+                let boneIndex = this.boneIndexs[i][t];
+                let boneWeight = this.boneWeights[i][t];
+                let bone = this.bones[boneIndex];
+                this.bindPoints[i].push(1);
+                finalVertex = add(finalVertex, scale(boneWeight, transform(this.bindPoints[i], bone.skinningMatrix)));
+                this.bindPoints[i].pop();
+            }
+            this.points[i] = vec3(finalVertex[0], finalVertex[1], finalVertex[2]);
+        }
+        this.buffersUpdated = false;
     }
 }
 

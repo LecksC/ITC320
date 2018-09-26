@@ -33,7 +33,7 @@ function multMat4Vec3(m,vx,vy,vz)
 		transformedVertex[posId]=dot(readVertex,m[posId]);
 	return transformedVertex;
 }
-function ColladaParser(fileName)
+function ColladaParser(data)
 {
 	//Bounding Box Data
 	this.boundBoxInit=false;
@@ -50,10 +50,7 @@ function ColladaParser(fileName)
 	//Modifable vertex array copy
 	this.vertexPositionDataWrite = [];
 	
-	objCode = loadFileAJAX(fileName);
-    if (!objCode) {
-       alert("Could not find shader source: "+fileName);
-    }
+	objCode = data;
 	
 
 	var xmlDoc;
