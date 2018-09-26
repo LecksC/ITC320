@@ -195,7 +195,7 @@ class Game {
 
         defaultprojectilemesh.addLathe(this.gl, shapePoints, [], bulletColor, vec3(0,0,1), vec3(0,1,0), 0, 10, false);
 
-        this.projectileTypes.default= new ProjectileType(defaultprojectilemesh, 10, 10);
+        this.projectileTypes.default= new ProjectileType(defaultprojectilemesh, 100, 1);
 
 
         // Initialize car.
