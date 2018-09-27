@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+<title>Assignment 2</title>
+
+<script data-cfasync="false" type="text/javascript" src="Common/webgl-utils.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Common/initShaders3.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Common/MV.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/Game.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/shader-common.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/vertex-shader-standard.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/vertex-shader-color.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/fragment-shader-textured.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/fragment-shader-ground.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/fragment-shader-carpaint.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Shaders/fragment-shader-color.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/Physics.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/math.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/math.tests.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/boundingbox.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/mesh.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/meshpart.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/shader.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/projectile-types.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/projectile.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/car.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/camera-first-person.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/camera-chase.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/camera-orbit.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/MtlParser.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/TGAParser.js"></script>
+<script data-cfasync="false" type="text/javascript" src="Code/ColladaParser.js"></script>
+</head>
+
+<body>
+    <canvas id="gl-canvas" width="800" height = "600" style="width:100%;height:100%;position:absolute;top:0;left:0">
+        Oops ... your browser doesn't support the HTML5 canvas element
+        </canvas>
+        <div id="stats" style="position:absolute; top:0; left:0; color: white; font-family: 'Courier New', Courier, monospace">
+        FPS: <span id="fps">None yet.</span><br/>
+        Polygons: <span id="polyCount">None yet.</span><br/>
+        Draw calls: <span id="drawCallCount">None yet.</span><br/>
+        Time scale: <span id="timeScale">1</span><br/>
+        Animation: <span id="animationIndex">1</span> % the number of animations on each mesh.<br/>
+        <br/>
+        <span id="instructions">WASD to move. Click and drag to look around.</span> + and - to change time scale. z and x to cycle animations.
+        </div>
+</body>
+</html>
