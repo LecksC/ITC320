@@ -1,12 +1,12 @@
 "use strict";
 /**
- * Class to load, store, update and draw a car's properties and graphics content.
+ * Class to handle an instance of a projectile.
  * 
  * @author Lecks Chester
  */
 class Projectile {
     /**
-     * Constructs a car, loads its' content and sets its' default properties.
+     * Constructs a projectile and sets its initial properties.
      * 
      * @param {vec3}              position      The starting position of the projectile.
      * @param {vec3}              direction     The direction the projectile was fired.     
@@ -42,9 +42,10 @@ class Projectile {
 
 
     /**
-     * Updates the vehicle, handling "AI", movement and physics.
+     * Updates the projectile and handles any of its' collisions.
      * 
-     * @param {float}   deltaTime   the time since the previous update.
+     * @param {float}   deltaTime   The time since the previous update.
+     * @param {Physics} physics     The physics engine.
      */
     update(deltaTime, physics)
     {
@@ -86,7 +87,4 @@ class Projectile {
 
         this.type.mesh.addInstanceFromVectors(this.position, eulerFromUnitVector(this.forwards), vec3(1.0,1.0,1.0));
     }
-
-
-
 }

@@ -1,8 +1,15 @@
+"use strict";
+/**
+ * Class to represent a type of projectile.
+ * 
+ */
 class ProjectileType {
     /**
-     * Constructs a car, loads its' content and sets its' default properties.
+     * Constructs a projectile type, with its' mesh, speed and weight.
      * 
-     * @param {WebGLContext}    gl  The WebGL Context.
+     * @param {Mesh}    mesh        The mesh to use for the projectile.
+     * @param {float}   startSpeed  The starting speed of the projectile.
+     * @param {float}   weight      The weight of the projectile.
      */
     constructor(mesh, startSpeed, weight)
     {
@@ -12,14 +19,13 @@ class ProjectileType {
     }
 
     /**
-     * Draw all of the car meshes. Should only be called once per frame (not once per vehicle).
+     * Draws all instances of the projectile.
      * 
      * @param {WebGLContext}    gl      The WebGL Context.
      * @param {Camera}          camera  The camera to use to draw the meshes.
-     * @param {float}           time    The current time used to colour the car.
      */
-    draw(gl, camera, time)
+    draw(gl, camera)
     {
-        this.mesh.draw(gl, camera, time);
+        this.mesh.draw(gl, camera);
     }
 }

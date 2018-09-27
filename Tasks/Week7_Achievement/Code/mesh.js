@@ -399,10 +399,10 @@ class Mesh {
         
     }
     /**
-     * Begins the download of an OBJ file.
+     * Begins the download of an Collada file.
      * 
      * @param {WebGLContext}    gl          The WebGL Context.
-     * @param {string}          fileName    The file name (excluding folder/extension) of the OBJ file to load.
+     * @param {string}          fileName    The file name (excluding folder/extension) of the Collada file to load.
      * @param {function(mesh)}  then        Callback to run when the mesh and materials have loaded.
      */
     downloadCollada(gl, fileName, then)
@@ -593,7 +593,7 @@ class Mesh {
             shapePoints = shapePoints.slice(0);
             shapeNormals = shapeNormals.slice(0);
             for (let i = shapePoints.length - 1; i >= 0; i--) {
-                if ((i == 0 || shapePoints.length - 1)) {
+                if ((i === 0 || shapePoints.length - 1)) {
                     continue;
                 }
                 shapePoints.push(vec3(-shapePoints[i][0], shapePoints[i][1]));
@@ -648,7 +648,13 @@ class Mesh {
         this.buffersUpdated = false;
     }
     
-
+    /**
+     * Adds a box to the mesh from the given size and center position.
+     * 
+     * @param {WebGLContext} gl The WebGL Context.
+     * @param {vec3} size The size of the box.
+     * @param {vec3} center The center position of the box.
+     */
     addBox(gl, size, center) 
     {
         let start = this.indexs.length;
@@ -736,6 +742,19 @@ class Mesh {
         this.buffersUpdated = false;
         this.calculateBounds();
     }
+
+    /**
+     * Creates the points, normals, colors and uvs for a quad and adds them to the mesh. Does not add a mesh part.
+     * 
+     * @param {vec3} bottomLeft The bottom left point of the quad.
+     * @param {vec3} topLeft The top left point of the quad.
+     * @param {vec3} bottomRight The bottom right point of the quad.
+     * @param {vec3} topRight The top right point of the quad.
+     * @param {vec3} normal The normal for the quad.
+     * @param {vec3} color The vertex colour of the quad.
+     * @param {vec2} uvmin The UVs at the bottom left of the quad.
+     * @param {vec2} uvmax The UVs at the top right of the quad.
+     */
     addQuad(bottomLeft, topLeft, bottomRight, topRight, normal, color, uvmin, uvmax)
     {
         let start = this.points.length;
@@ -763,6 +782,14 @@ class Mesh {
         this.indexs.push(start + 2);
     }
 
+
+    /**
+     * Parses a Collada file into this mesh.
+     * 
+     * @param {WebGLContext}    gl          The WebGL Context.
+     * @param {string}          data        The code/data from the DAE file.
+     * @param {function(mesh)}  then        Callback to run when the mesh has loaded.
+     */
     loadCollada(gl, data, then)
     {
         let collada = new ColladaParser(data);
@@ -770,26 +797,13 @@ class Mesh {
         this.boneIndexs = [];
         this.bindPoints = [];
         this.boneCounts = collada.vertexNumBonesDataRead;
-        for(let i = 0; i < collada.vertexBoneIndexDataRead.length/4; i++)
-        {
-            this.boneIndexs.push([
-                collada.vertexBoneIndexDataRead[i*4+0],
-                collada.vertexBoneIndexDataRead[i*4+1],
-                collada.vertexBoneIndexDataRead[i*4+2],
-                collada.vertexBoneIndexDataRead[i*4+3]
-            ]);
-            this.boneWeights.push([
-                collada.vertexBoneWeightDataRead[i*4+0],
-                collada.vertexBoneWeightDataRead[i*4+0],
-                collada.vertexBoneWeightDataRead[i*4+0],
-                collada.vertexBoneWeightDataRead[i*4+0]
-            ]);
-        }
+
         for(let i = 0; i < collada.vertexPositionDataRead.length/3; i++)
         {
             this.points.push(vec3(collada.vertexPositionDataRead[i*3+0],collada.vertexPositionDataRead[i*3+1],collada.vertexPositionDataRead[i*3+2]));
             this.normals.push(vec3(collada.vertexNormalDataRead[i*3+0],collada.vertexNormalDataRead[i*3+1],collada.vertexNormalDataRead[i*3+2]));
             this.bindPoints.push(vec3(collada.vertexPositionDataRead[i*3+0],collada.vertexPositionDataRead[i*3+1],collada.vertexPositionDataRead[i*3+2]));
+
         }
         for(let i = 0; i < collada.vertexTextureDataRead.length/2; i++){
             this.uvs.push(vec2(collada.vertexTextureDataRead[i*2+0],collada.vertexTextureDataRead[i*2+1]));
@@ -798,47 +812,113 @@ class Mesh {
         {
             this.indexs.push(i);
         }
+        let boneIndex = 0;
+        for(let i = 0; i < this.points.length; i++)
+        {
+            let boneCount = this.boneCounts[i];
+            let bones = [];
+            let weights = [];
+            for(let t = 0; t < 4; t++)
+            {
+                bones.push(collada.vertexBoneIndexDataRead[boneIndex]);
+                weights.push(collada.vertexBoneWeightDataRead[boneIndex]);
+                boneIndex++;
+            }
+            this.boneIndexs.push(bones);
+            this.boneWeights.push(weights);
+            let color = vec3(0,0,0);
+            color[bones[0]%3] = Math.max(color[bones[0]%3], weights[0]);
+            color[bones[1]%3] = Math.max(color[bones[1]%3], weights[1]);
+            color[bones[2]%3] = Math.max(color[bones[2]%3], weights[2]);
+            
+            this.colors.push(color);
+        }
         let mp = new MeshPart(gl, "skinnedmesh", 0, this.indexs.length);
-        //mp.shader = new Shader(gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
+    
         this.meshParts.push(mp);
         this.buffersUpdated = false;
         this.calculateBounds();
         this.bones = collada.bones;
-        this.updateSkeleton(5);
+        this.updateSkeleton(0, 5);
         this.updateVertices();
         if(then !== undefined)
         {
            then(this);
         }
     }
-    updateSkeleton(frame)
+
+
+    /**
+     * Update all of the skinned matrices of the skeleton to the specified time in the specified animation.
+     * 
+     * @param {int}     animationIndex      The index of the animation to use to pose the skeleton.
+     * @param {float}   time                The time from the start of the animation.
+     */
+    updateSkeleton(animationIndex, time)
     {
         if(this.bones)
-            this.updateBone(this.bones[0], frame);
+            this.updateBone(this.bones[0], animationIndex, time);
     }
-    updateBone(bone, frame)
+
+
+
+    /**
+     * Update a bone and its' children to the data in the specified animation/time.
+     * 
+     * @param {BoneInfo} bone The bone to update.
+     * @param {int} animationIndex The animation index to use.
+     * @param {float} time The time from the start of the animation.
+     */
+    updateBone(bone, animationIndex, time)
     {
         let jointMatrix; 
         let IBM = bone.inverseBindMatrix;
-        let frameCount = bone.animationTracks[1].keyFrameTransform.length;
+        let animation = bone.animationTracks[animationIndex%bone.animationTracks.length];
+        let frameCount = animation.keyFrameTransform.length;
+        let jointMatrixNextFrame;
         if(frameCount > 0)
         {
-            jointMatrix = bone.animationTracks[1].keyFrameTransform[frame%frameCount];
+            let modTime = time % animation.keyFrameTimes[animation.keyFrameTimes.length-1];
+            let frame = 0;
+            while(frame+1 < animation.keyFrameTimes.length && animation.keyFrameTimes[frame+1] < modTime)
+            {
+                frame++;
+            }
+        
+            let frameTime = animation.keyFrameTimes[(frame+1)%animation.keyFrameTimes.length] 
+                            - animation.keyFrameTimes[frame];
+            modTime -= animation.keyFrameTimes[frame];
+
+            bone.frameInterpolationValue  = modTime / frameTime;
+            jointMatrix = animation.keyFrameTransform[frame];
+            jointMatrixNextFrame = animation.keyFrameTransform[(frame+1)%frameCount];
         } else {
             jointMatrix = bone.bindPoseMatrix;
+            jointMatrixNextFrame = bone.bindPoseMatrix;
+            bone.frameInterpolationValue = 0;
         }
         if(bone.parent !== null)
         {
             jointMatrix = mult(bone.parent.jointMatrix, jointMatrix);
+            jointMatrixNextFrame =  mult(bone.parent.jointMatrixNextFrame, jointMatrixNextFrame);
         }
         let SM = mult(jointMatrix, IBM);
+        let SMNextFrame = mult(jointMatrixNextFrame, IBM);
         bone.jointMatrix = jointMatrix;
+        bone.jointMatrixNextFrame = jointMatrixNextFrame;
         bone.skinningMatrix = SM;
+        bone.skinningMatrixNextFrame = SMNextFrame;
         for(let i = 0; i < bone.children.length; i++)
         {
-            this.updateBone(bone.children[i], frame);
+            this.updateBone(bone.children[i], animationIndex, time);
         }
     }
+
+
+    /**
+     * Updates all the vertices in the mesh to the current skinned matrices specified in the skeleton.
+     * 
+     */
     updateVertices()
     {
         for(let i = 0; i < this.points.length; i++)
@@ -850,7 +930,10 @@ class Mesh {
                 let boneWeight = this.boneWeights[i][t];
                 let bone = this.bones[boneIndex];
                 this.bindPoints[i].push(1);
-                finalVertex = add(finalVertex, scale(boneWeight, transform(this.bindPoints[i], bone.skinningMatrix)));
+                let v1=transform(this.bindPoints[i], bone.skinningMatrix);
+                let v2=transform(this.bindPoints[i], bone.skinningMatrixNextFrame);
+                finalVertex = add(finalVertex, scale(boneWeight, mix(v1,v2,bone.frameInterpolationValue) ));
+                //console.log(this.frameInterpolationValue);
                 this.bindPoints[i].pop();
             }
             this.points[i] = vec3(finalVertex[0], finalVertex[1], finalVertex[2]);

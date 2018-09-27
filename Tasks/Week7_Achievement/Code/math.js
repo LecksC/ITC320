@@ -132,6 +132,14 @@ function eulerFromUnitVector(unit) {
 }
 
 
+/**
+ * Multiplies a vector3 by a matrix as a position (including translation).
+ * 
+ * @param {vec3} point The vector4 to transform.
+ * @param {mat4} matrix The transformation matrix.
+ * 
+ * @returns {vec3} The transformed vector.
+ */
 function transformPosition(point, matrix)
 {
     let vert = transform([point[0], point[1], point[2], 1.0], matrix);
@@ -140,24 +148,35 @@ function transformPosition(point, matrix)
     vert[2] /= vert[3];
     return vec3(vert[0], vert[1], vert[2]);
 }
+
+
+/**
+ * Multiplies a vector3 by a matrix as a vector (no translation).
+ * 
+ * @param {vec3} point The vector4 to transform.
+ * @param {mat4} matrix The transformation matrix.
+ * 
+ * @returns {vec3} The transformed vector.
+ */
 function transformVector(point, matrix)
 {
     let vert = transform([point[0], point[1], point[2], 0.0], matrix);
     return vec3(vert[0], vert[1], vert[2]);
 }
 
+
+/**
+ * Multiplies a vector4 by a matrix.
+ * 
+ * @param {vec4} vector The vector4 to transform.
+ * @param {mat4} matrix The transformation matrix.
+ * 
+ * @returns {vec4} The transformed vector.
+ */
 function transform(vector, matrix) {
     if(vector.length !== 4) {
         throw DOMException("vector must be a vector4");
     }
-    /*
-                    [00,01,02,03]       
-                    [10,11,12,13]
-                    [20,21,22,23]   *   
-                    [30,31,32,33]
-        [R,S,T,U]
-    */
- // matrix = transpose(matrix);
    //return [
    //    vector[0] * matrix[0][0] + vector[1] * matrix[1][0] + vector[2] * matrix[2][0] + vector[3] * matrix[3][0],
    //    vector[0] * matrix[0][1] + vector[1] * matrix[1][1] + vector[2] * matrix[2][1] + vector[3] * matrix[3][1],
@@ -170,6 +189,16 @@ function transform(vector, matrix) {
         vector[0] * matrix[3][0] + vector[1] * matrix[3][1] + vector[2] * matrix[3][2] + vector[3] * matrix[3][3]];
 }
 
+
+/**
+ * Returns the nearest intersection between the given ray and the given bounding box.
+ * 
+ * @param {BoundingBox} bounds      The bounding box to intercept against
+ * @param {vec3}        rayStart    The start position of the ray to check.
+ * @param {vec3}        rayEnd      The end position of the ray to check.
+ * 
+ * @returns {vec3} the intersection if there is one, otherwise null.
+ */
 function lineSegmentIntersectsAxisAlignedCenteredBox(bounds, rayStart, rayEnd)
 {
     //console.log("Checking intersection:");
@@ -219,23 +248,23 @@ function lineSegmentIntersectsAxisAlignedCenteredBox(bounds, rayStart, rayEnd)
     return intersection;
 }
 
-// https://stackoverflow.com/questions/5666222/3d-line-plane-intersection
+
+/**
+ * Returns the intersection point of a line and a plane (if there is one), otherwise null.
+ * 
+ * Based on an answer from https://stackoverflow.com/questions/5666222/3d-line-plane-intersection
+ * 
+ * @param {vec3} planePoint A point on the plane.
+ * @param {vec3} planeNormal The plane normal.
+ * @param {vec3} linePoint A point on the line.
+ * @param {vec3} lineVector The line direction.
+ * 
+ * @returns {vec3} The intersection point, or null if none.
+ */
 function lineIntersectPlane(planePoint, planeNormal, linePoint, lineVector)
 {
-    //   def isect_line_plane_v3(p0, p1, p_co, p_no, epsilon= 1e-6):
-    //       """
-    //       p0, p1: define the line
-    //       p_co, p_no: define the plane:
-    //               p_co is a point on the plane(plane coordinate).
-    //               p_no is a normal vector defining the plane direction;
-    //               (does not need to be normalized).
-    //
-    //       return a Vector or None(when the intersection can't be found).
-    //       """
-    //
     let u = lineVector;
     let dotp = dot(planeNormal, u);
-
     if (Math.abs(dotp) > 0.00001)
     {
         // the factor of the point between p0 -> p1 (0 - 1)
@@ -248,18 +277,36 @@ function lineIntersectPlane(planePoint, planeNormal, linePoint, lineVector)
         u = scale(fac, u);
         return add(linePoint,  u);
     }
-
     else {
-        // The segment is parallel to plane
         return null;
     }
 }
 
+
+/**
+ * Returns the magnitude/length of a vector3.
+ * 
+ * @param {vec3}    vector  The vector3 to get the length of.
+ * 
+ * @returns {float} The length of the vector.
+ */
 function magnitude(vector)
 {
     return Math.sqrt(vector[0]*vector[0] + vector[1]*vector[1] + vector[2]*vector[2]);
 }
 
+
+/**
+ * NOT WORKING!! Needs more testing.
+ * Finds the nearest intersect between a line and an axis aligned bounding box.
+ * 
+ * @param {BoundingBox}     bounds          The bounding box to raycast against.
+ * @param {vec3}            rayPoint        The start point of the ray.
+ * @param {vec3}            rayDirection    The direction of the ray.
+ * @param {float}           rayDistance     The maximum distance along the ray for collisions.
+ * 
+ * @returns {vec3} The collision point, or null if none.
+ */
 function rayCastAABB(bounds, rayPoint, rayDirection, rayDistance)
 {
     let mins = [];
@@ -288,6 +335,16 @@ function rayCastAABB(bounds, rayPoint, rayDirection, rayDistance)
     return add(rayPoint, scale(tMin, rayDirection));
 }
 
+
+/**
+ * Normalizes a vector without destroying the original vector.
+ * 
+ * @param {vec3} u The vector to normalize.
+ * @param {bool} excludeLastComponent Whether or not to exclude the last element from the calculation.
+ * 
+ * @returns {vec3} The original vector.
+ * @throws an exception if the vector has zero length.
+ */
 function normalized( u, excludeLastComponent )
 {
     let t = [0,0,0];
@@ -313,6 +370,17 @@ function normalized( u, excludeLastComponent )
 
     return t;
 }
+
+
+/**
+ * Returns the minimum value from an array of at least 1 numbers.
+ * 
+ * @param {number[]} array The array of numbers.
+ * 
+ * @returns {number} The lowest number.
+ * 
+ * @throws an exception if the matrix is empty.
+ */
 function minNumber(array)
 {
     if(array.length === 0){
@@ -326,6 +394,16 @@ function minNumber(array)
     return val;
 }
 
+
+/**
+ * Returns the maximum value from an array of at least 1 numbers.
+ * 
+ * @param {number[]} array The array of numbers.
+ * 
+ * @returns {number} The highest number.
+ * 
+ * @throws an exception if the matrix is empty.
+ */
 function maxNumber(array)
 {
     if(array.length === 0){
@@ -337,4 +415,24 @@ function maxNumber(array)
         val = Math.max(val, array[i]);
     }
     return val;
+}
+
+/**
+ * DOES NOT WORK!!!
+ * Interpolates between 2 matrices.
+ * 
+ * @param {matrix}  a        The first matrix.
+ * @param {matrix}  b        The second matrix.
+ * @param {float}   lerp     The interpolation value.
+ * 
+ * @returns {matrix} the interpolated matrix.
+ * 
+ */
+function lerpMatrix(a,b,lerp)
+{
+    lerp = Math.max(0, Math.min(1, lerp));
+    return [[a[0][0]*lerp + b[0][0]*(1-lerp), a[0][1]*lerp + b[0][1]*(1-lerp), a[0][2]*lerp + b[0][2]*(1-lerp), a[0][3]*lerp + b[0][3]*(1-lerp) ],
+            [a[1][0]*lerp + b[1][0]*(1-lerp), a[1][1]*lerp + b[1][1]*(1-lerp), a[1][2]*lerp + b[1][2]*(1-lerp), a[1][3]*lerp + b[1][3]*(1-lerp) ],
+            [a[2][0]*lerp + b[2][0]*(1-lerp), a[2][1]*lerp + b[2][1]*(1-lerp), a[2][2]*lerp + b[2][2]*(1-lerp), a[2][3]*lerp + b[2][3]*(1-lerp) ],
+            [a[3][0]*lerp + b[3][0]*(1-lerp), a[3][1]*lerp + b[3][1]*(1-lerp), a[3][2]*lerp + b[3][2]*(1-lerp), a[3][3]*lerp + b[3][3]*(1-lerp) ]];
 }

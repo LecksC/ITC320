@@ -97,7 +97,11 @@ class Game {
             elapsedTime: 0,
             frameCount: 0,
             polyCount: 0,
-            drawCallCount: 0
+            drawCallCount: 0,
+            timeScaleMax: 5,
+            timeScaleMin: 0.5,
+            timeScaleStep: 0.5,
+            timeScale: 1
         };
 
 
@@ -119,12 +123,55 @@ class Game {
         };
 
 
+        /**
+         * Encapsulates any physics functions and physics specific data.
+         * 
+         * @type {Physics}
+         */
         this.physics = new Physics(this);
+
+
+        /**
+         * The types of projectiles that can be added.
+         * 
+         * @type {ProjectileType}
+         */
         this.projectileTypes = { };
+
+
+        /**
+         * Instances of projectiles in the world.
+         * 
+         * @type {Projectile[]}
+         */
         this.projectiles = [];
 
+
+        /**
+         * The index of the current animation.
+         * 
+         * @type {int}
+         */
+        this.animationIndex = 0;
+
+
+        /**
+         * A list of all of the static meshes in the scene, used for physics calculations.
+         * 
+         * @type {Mesh[]}
+         */
         this.meshes = [];
+
+
+        /**
+         * A list of all of the drawable objects in the scene, used for iterating/drawing them.
+         * 
+         * @type {objects with draw function}
+         */
         this.drawables = [];
+
+
+        // Initialize the program.
         this.init();
     }
 
@@ -183,10 +230,35 @@ class Game {
         let rectangleTexture = TGAParser.downloadTGA(this.gl, "Assets/textures/AnimatedRectangle.tga");
         rectangle.addInstanceFromVectors(vec3(0,0,0), vec3(-90,25,0), vec3(1,1,1));
         rectangle.downloadCollada(this.gl, "AnimatedRectanglev2",function(mesh) {
-            rectangle.meshParts[0].mainTexture = rectangleTexture;
+           // rectangle.meshParts[0].mainTexture = rectangleTexture;
+            
+            rectangle.meshParts[0].shader = new Shader(self.gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
          });
         this.animatedBox = rectangle;
         this.drawables.push(rectangle);
+
+        let goblin = new Mesh(this.gl);
+        let goblinTexture = TGAParser.downloadTGA(this.gl, "Assets/textures/goblintexture.tga");
+        goblin.addInstanceFromVectors(vec3(10,0,-10), vec3(-90,25,0), vec3(1,1,1));
+        goblin.downloadCollada(this.gl, "goblin",function(mesh) {
+            //goblin.meshParts[0].mainTexture = goblinTexture;
+            
+            goblin.meshParts[0].shader = new Shader(self.gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
+         });
+        this.goblin = goblin;
+        this.drawables.push(goblin);
+
+        let cat = new Mesh(this.gl);
+       //let catTexture = TGAParser.downloadTGA(this.gl, "Assets/textures/goblintexture.tga");
+        cat.addInstanceFromVectors(vec3(10,0,10), vec3(180,25,0), vec3(0.00001,0.00001,0.00001));
+        cat.downloadCollada(this.gl, "cat",function(mesh) {
+            //cat.meshParts[0].mainTexture = goblinTexture;
+            cat.meshParts[0].shader = new Shader(self.gl, Game.GLSL.vsColor, Game.GLSL.fsColor);
+         });
+        this.cat = cat;
+        this.drawables.push(cat);
+
+
         // Initialize projectile mesh.
         let defaultprojectilemesh = new Mesh(this.gl);
         this.drawables.push(defaultprojectilemesh);
@@ -367,8 +439,12 @@ class Game {
 
         this.handleTiming(frameTime);
         this.handleInput();
-        this.animatedBox.updateSkeleton(Math.floor(this.timing.currentTime*10));
+        this.animatedBox.updateSkeleton(this.animationIndex,this.timing.currentTime);
         this.animatedBox.updateVertices();
+        this.goblin.updateSkeleton(this.animationIndex,this.timing.currentTime);
+        this.goblin.updateVertices();
+        this.cat.updateSkeleton(this.animationIndex, this.timing.currentTime);
+        this.cat.updateVertices();
         this.car.resetInstances();
         for(let key in this.projectileTypes)
         {
@@ -397,7 +473,7 @@ class Game {
      */
     handleTiming(frameTime) {
         if(frameTime !== 0.0) {
-            this.timing.deltaTime = (frameTime * 0.001) - this.timing.previousFrameTime;
+            this.timing.deltaTime = ((frameTime * 0.001) - this.timing.previousFrameTime) * this.timing.timeScale;
             this.timing.currentTime += this.timing.deltaTime; 
             this.timing.previousFrameTime = frameTime * 0.001;
             this.timing.elapsedTime += this.timing.deltaTime;
@@ -473,6 +549,26 @@ class Game {
                     self.cameraIndex = (self.cameraIndex+1)%self.cameras.length;
                     document.getElementById('instructions').innerHTML = self.cameras[self.cameraIndex].instructions;
                     self.onResizeCanvas();
+                    break;
+                }
+                case "-": {
+                    self.timing.timeScale = Math.max(self.timing.timeScaleMin, self.timing.timeScale - self.timing.timeScaleStep);
+                    document.getElementById('timeScale').innerHTML = self.timing.timeScale;
+                    break;
+                }
+                case "+": {
+                    self.timing.timeScale = Math.min(self.timing.timeScaleMax, self.timing.timeScale + self.timing.timeScaleStep);
+                    document.getElementById('timeScale').innerHTML = self.timing.timeScale;
+                    break;
+                }
+                case "z": {
+                    self.animationIndex = Math.max(0, self.animationIndex - 1);
+                    document.getElementById('animationIndex').innerHTML = self.animationIndex;
+                    break;
+                }
+                case "x": {
+                    self.animationIndex++;
+                    document.getElementById('animationIndex').innerHTML = self.animationIndex;
                     break;
                 }
                 case "Enter": {
@@ -560,11 +656,21 @@ class Game {
         this.cameras[this.cameraIndex].move(forward*this.timing.deltaTime*10,right*this.timing.deltaTime*10);
     }
 
+
+    /**
+     * Initializes the pointer lock event on the canvas.
+     * 
+     */
     initPointerLock() {
         this.canvas.requestPointerLock = this.canvas.requestPointerLock || this.canvas.mozRequestPointerLock;
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
     }
 
+
+    /**
+     * Adds the mouse move event when the pointer is locked, and removes it when it's unlocked.
+     * 
+     */
     lockChangeAlert() {
         if (this.isPointerLocked) {
           document.addEventListener("mousemove", this.updateMousePosition.bind(this), false);
@@ -573,6 +679,12 @@ class Game {
         }
     }
 
+
+    /**
+     * Event for when the mouse position changes with mouse lock enabled.
+     * 
+     * @param {MouseEvent} e Event data.
+     */
     updateMousePosition(e) {
         this.input.mouseLookStartPosition = add(
             this.input.mouseLookStartPosition, 
@@ -580,11 +692,22 @@ class Game {
         );
     }
 
+
+    /**
+     * Returns whether or not the mouse cursor is locked.
+     * 
+     * @returns {boolean} True if the pointer is locked, otherwise false.
+     */
     get isPointerLocked()
     {
         return document.pointerLockElement === this.canvas || document.mozPointerLockElement === this.canvas;
     }
 
+
+    /**
+     * Puts the canvas in full screen mode.
+     * 
+     */
     goFullScreen() {
         if(this.canvas.requestFullScreen)
         {
@@ -604,12 +727,22 @@ class Game {
         } 
     }
 
+
+    /**
+     * Fires a projectile from the center of the screen.
+     * 
+     */
     fireProjectile()
     {
         let projectile = new Projectile(this.camera.position, this.camera.forwardVector, this.projectileTypes.default);
         this.projectiles.push(projectile);
     }
 
+    /**
+     * Gets the current camera.
+     * 
+     * @returns {Camera} The current camera.
+     */
     get camera()
     {
         return this.cameras[this.cameraIndex];
